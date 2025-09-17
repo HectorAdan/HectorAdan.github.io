@@ -191,6 +191,38 @@
             margin-bottom: 1rem;
         }
 
+        /* Education Section */
+        .education-item {
+            background: #f8f9ff;
+            padding: 2rem;
+            border-radius: 15px;
+            margin-bottom: 2rem;
+            border-left: 4px solid #667eea;
+        }
+
+        .education-item h3 {
+            font-size: 1.5rem;
+            color: #333;
+            margin-bottom: 0.5rem;
+        }
+
+        .education-item .institution {
+            color: #667eea;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .education-item .year {
+            color: #666;
+            font-style: italic;
+            margin-bottom: 1rem;
+        }
+
+        .education-item p {
+            color: #666;
+            line-height: 1.6;
+        }
+
         /* Skills Section */
         .skills-grid {
             display: grid;
@@ -362,6 +394,7 @@
             <div class="logo">Hector Morales</div>
             <ul class="nav-links">
                 <li><a href="#about">About</a></li>
+                <li><a href="#education">Education</a></li>
                 <li><a href="#skills">Skills</a></li>
                 <li><a href="#experience">Experience</a></li>
                 <li><a href="#contact">Contact</a></li>
@@ -406,16 +439,34 @@
                             problem-solving and creating applications that make a real difference in people's lives.
                         </p>
                         <p>
-                            Throughout my career, I've had the opportunity to work with cutting-edge technologies
-                            and collaborate with talented teams to deliver high-quality products. I believe in
-                            continuous learning and staying up-to-date with the latest industry trends and best
-                            practices.
+                            As a graduate in Computer Systems Engineering from Universidad de Colima, I have a strong
+                            foundation in software development principles and modern programming practices. Throughout
+                            my
+                            career, I've had the opportunity to work with cutting-edge technologies and collaborate with
+                            talented teams to deliver high-quality products.
                         </p>
                         <p>
                             When I'm not coding, you can find me exploring new technologies, contributing to open-source
                             projects, or sharing knowledge with the developer community.
                         </p>
                     </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Education Section -->
+        <section id="education" class="section">
+            <div class="container">
+                <h2 class="section-title">Education</h2>
+                <div class="education-item">
+                    <h3>Licenciatura en Ingeniería en Sistemas Computacionales</h3>
+                    <p class="institution">Universidad de Colima</p>
+                    <p class="year">Colima, Mexico • Graduated 2019</p>
+                    <p>
+                        Comprehensive study of computer systems engineering including software development,
+                        database design, system architecture, and modern programming methodologies.
+                        This foundation has been crucial in developing scalable and efficient applications.
+                    </p>
                 </div>
             </div>
         </section>
@@ -433,6 +484,7 @@
                             <span class="skill-tag">CSS</span>
                             <span class="skill-tag">HTML5</span>
                             <span class="skill-tag">Redux</span>
+                            <span class="skill-tag">JavaScript</span>
                         </div>
                     </div>
                     <div class="skill-category">
@@ -449,8 +501,10 @@
                         <div class="skill-tags">
                             <span class="skill-tag">Python</span>
                             <span class="skill-tag">Django</span>
+                            <span class="skill-tag">Node.js</span>
                             <span class="skill-tag">REST APIs</span>
                             <span class="skill-tag">Database Design</span>
+                            <span class="skill-tag">SQL</span>
                         </div>
                     </div>
                     <div class="skill-category">
@@ -461,6 +515,7 @@
                             <span class="skill-tag">AWS</span>
                             <span class="skill-tag">CI/CD</span>
                             <span class="skill-tag">Agile</span>
+                            <span class="skill-tag">Linux</span>
                         </div>
                     </div>
                 </div>
@@ -477,7 +532,8 @@
                     <p>
                         Leading development of complex web and mobile applications using React, React Native,
                         and Django. Mentoring junior developers and implementing best practices for scalable
-                        application architecture.
+                        application architecture. Specializing in creating cross-platform solutions that deliver
+                        consistent user experiences across web and mobile platforms.
                     </p>
                 </div>
                 <div class="experience-item">
@@ -486,7 +542,8 @@
                     <p>
                         Developed and maintained multiple web applications using modern JavaScript frameworks
                         and Python backend technologies. Collaborated with cross-functional teams to deliver
-                        high-quality software solutions.
+                        high-quality software solutions. Focused on performance optimization and user experience
+                        enhancement.
                     </p>
                 </div>
                 <div class="experience-item">
@@ -494,7 +551,9 @@
                     <p class="duration">2016 - 2018</p>
                     <p>
                         Specialized in creating responsive and interactive user interfaces using React and
-                        modern CSS techniques. Focused on performance optimization and user experience enhancement.
+                        modern CSS techniques. Built mobile applications using React Native for both iOS and Android
+                        platforms.
+                        Focused on performance optimization and user experience enhancement.
                     </p>
                 </div>
             </div>
@@ -518,17 +577,18 @@
                         <div class="contact-item">
                             <i class="fas fa-phone"></i>
                             <h3>Phone</h3>
-                            <p>+1 (555) 123-4567</p>
+                            <p>+52 (312) XXX-XXXX</p>
                         </div>
                         <div class="contact-item">
                             <i class="fas fa-map-marker-alt"></i>
                             <h3>Location</h3>
-                            <p>Available for Remote Work</p>
+                            <p>Colima, Mexico</p>
                         </div>
                     </div>
                     <div class="cta-buttons">
                         <a href="mailto:hector.morales@email.com" class="btn btn-primary">Send Email</a>
-                        <a href="#" class="btn btn-secondary">Download Resume</a>
+                        <a href="https://www.linkedin.com/in/hectoradanmoraleslugo" class="btn btn-secondary"
+                            target="_blank">LinkedIn Profile</a>
                     </div>
                 </div>
             </div>
@@ -539,7 +599,8 @@
     <footer>
         <div class="container">
             <div class="social-links">
-                <a href="#"><i class="fab fa-linkedin"></i></a>
+                <a href="https://www.linkedin.com/in/hectoradanmoraleslugo" target="_blank"><i
+                        class="fab fa-linkedin"></i></a>
                 <a href="#"><i class="fab fa-github"></i></a>
                 <a href="#"><i class="fab fa-twitter"></i></a>
                 <a href="#"><i class="fab fa-instagram"></i></a>
