@@ -177,6 +177,14 @@
             font-size: 4rem;
             color: white;
             margin: 0 auto;
+            overflow: hidden;
+        }
+
+        .profile-image img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
         }
 
         .about-text {
@@ -283,7 +291,14 @@
         .experience-item .duration {
             color: #667eea;
             font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .experience-item .location {
+            color: #888;
+            font-style: italic;
             margin-bottom: 1rem;
+            font-size: 0.95rem;
         }
 
         .experience-item p {
@@ -319,6 +334,56 @@
             line-height: 1.6;
             margin-top: 1rem;
             font-style: italic;
+        }
+
+        /* Projects Section */
+        .project-item {
+            background: #f8f9ff;
+            padding: 2rem;
+            border-radius: 15px;
+            margin-bottom: 2rem;
+            border-left: 4px solid #667eea;
+        }
+
+        .project-item h3 {
+            font-size: 1.5rem;
+            color: #333;
+            margin-bottom: 0.5rem;
+        }
+
+        .project-duration {
+            color: #667eea;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            font-size: 0.95rem;
+        }
+
+        .project-institution {
+            color: #888;
+            font-style: italic;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+        }
+
+        .project-description {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+        }
+
+        .project-technologies {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .tech-tag {
+            background: #667eea;
+            color: white;
+            padding: 0.3rem 0.8rem;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: 500;
         }
 
         /* Contact Section */
@@ -431,6 +496,7 @@
                 <li><a href="#education">Education</a></li>
                 <li><a href="#skills">Skills</a></li>
                 <li><a href="#experience">Experience</a></li>
+                <li><a href="#projects">Projects</a></li>
                 <li><a href="#publications">Publications</a></li>
                 <li><a href="#contact">Contact</a></li>
             </ul>
@@ -464,7 +530,9 @@
                 <h2 class="section-title">About Me</h2>
                 <div class="about-content">
                     <div class="profile-image">
-                        <i class="fas fa-user"></i>
+                        <img src="https://media.licdn.com/dms/image/v2/D4E03AQHDZl7DQmGw0w/profile-displayphoto-shrink_800_800/profile-displayphoto-shrink_800_800/0/1719025238787?e=1761177600&v=beta&t=45qSnaANkrLPHpD7_u3XSte8-M8bAQTlEoDONVKyL2Q"
+                            alt="Hector Adan Morales Lugo"
+                            style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
                     </div>
                     <div class="about-text">
                         <h3>Hello, I'm Hector!</h3>
@@ -494,14 +562,26 @@
             <div class="container">
                 <h2 class="section-title">Education</h2>
                 <div class="education-item">
-                    <h3>Licenciatura en Ingeniería en Sistemas Computacionales</h3>
-                    <p class="institution">Universidad de Colima</p>
-                    <p class="year">Colima, Mexico • Graduated 2019</p>
+                    <h3>Master's Degree in Computer Science</h3>
+                    <p class="institution">Tecnológico Nacional de México Campus Colima</p>
+                    <p class="year">Colima, Mexico • 2018 - 2020</p>
                     <p>
-                        Comprehensive study of computer systems engineering including software development,
+                        Advanced studies in computer science focusing on software engineering, algorithms,
+                        data structures, and advanced programming methodologies. Specialized research in
+                        business intelligence systems and decision support technologies. This graduate program
+                        provided deep theoretical knowledge and practical skills for complex software development
+                        projects.
+                    </p>
+                </div>
+                <div class="education-item">
+                    <h3>Bachelor's Degree in Computer Science</h3>
+                    <p class="institution">Universidad de Colima</p>
+                    <p class="year">Colima, Mexico • 2014 - 2018</p>
+                    <p>
+                        Comprehensive undergraduate program in computer science covering software development,
                         database design, system architecture, and modern programming methodologies.
-                        This foundation has been crucial in developing scalable and efficient applications.
-                        Focused on business intelligence systems and decision support technologies.
+                        This foundation provided essential knowledge for developing scalable and efficient applications.
+                        Focused on both theoretical concepts and practical implementation skills.
                     </p>
                 </div>
             </div>
@@ -572,35 +652,80 @@
             <div class="container">
                 <h2 class="section-title">Professional Experience</h2>
                 <div class="experience-item">
-                    <h3>Senior Full-Stack Developer</h3>
-                    <p class="duration">2020 - Present</p>
+                    <h3>Senior FullStack Javascript Developer</h3>
+                    <p class="duration">WestonDEV • March 2022 - Present (3+ years)</p>
+                    <p class="location">Miami, Florida, United States</p>
                     <p>
-                        Leading development of complex web and mobile applications using React, React Native,
-                        and Django. Specializing in business intelligence systems and decision support technologies.
-                        Mentoring junior developers and implementing best practices for scalable
-                        application architecture. Focused on creating cross-platform solutions that deliver
-                        consistent user experiences across web and mobile platforms.
+                        Currently working as a Fullstack Javascript Developer using React, React Native, TypeScript and
+                        Redux.
+                        For backend development, utilizing Firebase, Node.js, SQL, and AWS. Leading development of
+                        complex
+                        web and mobile applications with focus on scalable architecture and modern development
+                        practices.
                     </p>
                 </div>
                 <div class="experience-item">
-                    <h3>Full-Stack Developer</h3>
-                    <p class="duration">2018 - 2020</p>
+                    <h3>Software Developer</h3>
+                    <p class="duration">Kioscomático y Soluciones • March 2020 - March 2022 (2 years 1 month)</p>
+                    <p class="location">México</p>
                     <p>
-                        Developed and maintained multiple web applications using modern JavaScript frameworks
-                        and Python backend technologies. Collaborated with cross-functional teams to deliver
-                        high-quality software solutions. Focused on performance optimization and user experience
-                        enhancement. Worked on business intelligence projects for data-driven decision making.
+                        Worked as a Frontend developer using React and React Native, and also as a fullstack developer
+                        in PHP/CodeIgniter. Specialized in Google Maps integration, web design, and cross-platform
+                        mobile development. Delivered high-quality software solutions for various client projects.
                     </p>
                 </div>
                 <div class="experience-item">
-                    <h3>Frontend Developer</h3>
-                    <p class="duration">2016 - 2018</p>
+                    <h3>Python/Django Developer</h3>
+                    <p class="duration">Colima Impulsa • June 2017 - December 2017 (7 months)</p>
+                    <p class="location">Colima, Colima, México</p>
                     <p>
-                        Specialized in creating responsive and interactive user interfaces using React and
-                        modern CSS techniques. Built mobile applications using React Native for both iOS and Android
-                        platforms. Focused on performance optimization and user experience enhancement.
-                        Contributed to research projects involving business intelligence systems.
+                        Worked as a Full-Stack Developer with Python using Django Framework and Django REST Framework
+                        on a web Finance system. Developed and redesigned UI and improved UX. Performed database
+                        normalization and optimization. Added numerous features and options for both front-end and
+                        back-end.
                     </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Projects Section -->
+        <section id="projects" class="section">
+            <div class="container">
+                <h2 class="section-title">Featured Projects</h2>
+                <div class="project-item">
+                    <h3>ORNALISIS</h3>
+                    <p class="project-duration">February 2018 - February 2020</p>
+                    <p class="project-institution">Associated with Tecnológico Nacional de México Campus Colima</p>
+                    <p class="project-description">
+                        Business intelligence system for decision making in the commercialization of ornamental plants.
+                        Developed using Python/Django for the backend and JavaScript for the frontend. This project
+                        demonstrates expertise in data analysis, business intelligence, and full-stack web development
+                        for agricultural technology solutions.
+                    </p>
+                    <div class="project-technologies">
+                        <span class="tech-tag">Python</span>
+                        <span class="tech-tag">Django</span>
+                        <span class="tech-tag">JavaScript</span>
+                        <span class="tech-tag">Business Intelligence</span>
+                        <span class="tech-tag">Data Analysis</span>
+                    </div>
+                </div>
+                <div class="project-item">
+                    <h3>AYOHUI</h3>
+                    <p class="project-duration">Ongoing Project</p>
+                    <p class="project-institution">Associated with Universidad de Colima</p>
+                    <p class="project-description">
+                        A Network of Learning and Shared Knowledge developed in Python/Django and JavaScript.
+                        This educational platform facilitates knowledge sharing and collaborative learning,
+                        showcasing skills in building scalable web applications for educational purposes.
+                    </p>
+                    <div class="project-technologies">
+                        <span class="tech-tag">Python</span>
+                        <span class="tech-tag">Django</span>
+                        <span class="tech-tag">JavaScript</span>
+                        <span class="tech-tag">Educational Technology</span>
+                        <span class="tech-tag">Knowledge Management</span>
+                    </div>
                 </div>
             </div>
         </section>
