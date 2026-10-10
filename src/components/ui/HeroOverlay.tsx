@@ -1,14 +1,15 @@
-import { ArrowRight, Orbit, Compass, Sparkles, Volume2, X } from 'lucide-react';
+import { ArrowRight, Orbit, Compass, Volume2, X } from 'lucide-react';
 import { PERSONAL_INFO } from '../../data/portfolioData';
 import { SectorId } from '../../types/portfolio';
 
 interface HeroOverlayProps {
   onMeetHector: () => void;
+  onCloseIntro: () => void;
   onExplore: (sector: SectorId) => void;
   isIntroPlaying: boolean;
 }
 
-export function HeroOverlay({ onMeetHector, onExplore, isIntroPlaying }: HeroOverlayProps) {
+export function HeroOverlay({ onMeetHector, onCloseIntro, onExplore, isIntroPlaying }: HeroOverlayProps) {
   return (
     <>
       <div className="absolute inset-0 z-20 pointer-events-none flex flex-col justify-between p-6 sm:p-10 lg:p-14">
@@ -99,19 +100,30 @@ export function HeroOverlay({ onMeetHector, onExplore, isIntroPlaying }: HeroOve
         </div>
       </div>
 
-      {/* Floating Holographic Introduction Overlay Card when "Meet Hector" is active */}
+      {/* Persistent Holographic Introduction Overlay Card when "Meet Hector" is active */}
       {isIntroPlaying && (
-        <div className="fixed inset-0 z-50 pointer-events-auto flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
-          <div className="max-w-lg w-full bg-black/90 backdrop-blur-2xl border-2 border-cyan-400 rounded-2xl p-6 sm:p-8 shadow-[0_0_60px_rgba(0,240,255,0.5)] animate-slide-left text-left relative">
+        <div
+          onClick={(e) => {
+            if (e.target === e.currentTarget) onCloseIntro();
+          }}
+          className="fixed inset-0 z-50 pointer-events-auto flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
+        >
+          <div className="max-w-lg w-full bg-black/95 backdrop-blur-2xl border-2 border-cyan-400 rounded-2xl p-6 sm:p-8 shadow-[0_0_60px_rgba(0,240,255,0.6)] animate-slide-left text-left relative">
+            {/* Close Button in top corner */}
+            <button
+              onClick={onCloseIntro}
+              className="absolute top-4 right-4 p-2 rounded-lg bg-cyan-950/40 border border-cyan-500/30 text-cyan-300 hover:text-white hover:bg-cyan-900/60 hover:border-cyan-400 transition-all font-mono text-xs flex items-center gap-1"
+              title="Close Inspection (Esc)"
+              aria-label="Close avatar inspection"
+            >
+              <span>ESC</span>
+              <X className="w-4 h-4" />
+            </button>
+
             {/* Top Telemetry Line */}
-            <div className="flex items-center justify-between pb-3 mb-4 border-b border-cyan-900/60 font-mono text-xs">
-              <div className="flex items-center gap-2 text-cyan-300">
-                <Volume2 className="w-4 h-4 text-cyan-400 animate-pulse" />
-                <span className="tracking-widest font-bold">NEURAL TRANSMISSION: ACTIVE</span>
-              </div>
-              <div className="flex items-center gap-1 text-[10px] text-cyan-400 bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-700/40">
-                <span>60 FPS</span>
-              </div>
+            <div className="flex items-center gap-2 pb-3 mb-4 border-b border-cyan-900/60 font-mono text-xs text-cyan-300">
+              <Volume2 className="w-4 h-4 text-cyan-400 animate-pulse" />
+              <span className="tracking-widest font-bold">NEURAL IDENTITY: FOCAL LOCK</span>
             </div>
 
             {/* Avatar Header & Welcome Greeting */}
@@ -126,7 +138,7 @@ export function HeroOverlay({ onMeetHector, onExplore, isIntroPlaying }: HeroOve
               </div>
 
               <div>
-                <div className="text-xs font-mono text-cyan-400 tracking-wider uppercase mb-0.5">
+                <div className="text-[11px] font-mono text-cyan-400 tracking-wider uppercase mb-0.5">
                   DIGITAL AVATAR TWIN
                 </div>
                 <h3 className="text-xl sm:text-2xl font-bold font-display text-white">
@@ -139,7 +151,7 @@ export function HeroOverlay({ onMeetHector, onExplore, isIntroPlaying }: HeroOve
             </div>
 
             {/* Personal Statement */}
-            <p className="text-gray-200 text-xs sm:text-sm leading-relaxed mb-5 bg-cyan-950/20 p-3.5 rounded-xl border border-cyan-900/50">
+            <p className="text-gray-200 text-xs sm:text-sm leading-relaxed mb-5 bg-cyan-950/30 p-3.5 rounded-xl border border-cyan-900/60">
               "Welcome to The Intelligence Interface. I specialize in building high-scale production web architectures, cross-platform React Native apps, and GPU-accelerated spatial interfaces at the intersection of engineering and creative design."
             </p>
 
@@ -158,7 +170,10 @@ export function HeroOverlay({ onMeetHector, onExplore, isIntroPlaying }: HeroOve
             {/* Direct Exploration Actions */}
             <div className="flex items-center gap-3">
               <button
-                onClick={() => onExplore('projects')}
+                onClick={() => {
+                  onCloseIntro();
+                  onExplore('projects');
+                }}
                 className="flex-1 py-2.5 rounded-xl bg-cyan-500 text-black font-mono text-xs font-bold hover:bg-cyan-400 transition-all shadow-[0_0_15px_rgba(0,240,255,0.4)] flex items-center justify-center gap-1.5"
               >
                 <span>EXPLORE PROJECTS</span>
@@ -166,7 +181,10 @@ export function HeroOverlay({ onMeetHector, onExplore, isIntroPlaying }: HeroOve
               </button>
 
               <button
-                onClick={() => onExplore('about')}
+                onClick={() => {
+                  onCloseIntro();
+                  onExplore('about');
+                }}
                 className="flex-1 py-2.5 rounded-xl bg-black/60 border border-cyan-500/50 text-cyan-300 font-mono text-xs font-bold hover:border-cyan-400 hover:bg-cyan-950/40 transition-all flex items-center justify-center gap-1.5"
               >
                 <span>VIEW PROFILE</span>

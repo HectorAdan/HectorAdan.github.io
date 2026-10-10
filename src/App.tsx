@@ -85,7 +85,11 @@ export default function App() {
 
       switch (e.key) {
         case 'Escape':
-          setActiveSector('home');
+          if (isIntroPlaying) {
+            setIsIntroPlaying(false);
+          } else {
+            setActiveSector('home');
+          }
           soundManager.playNeuralClick();
           break;
         case '0':
@@ -112,7 +116,7 @@ export default function App() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleSelectSector, handleToggleMute]);
+  }, [handleSelectSector, handleToggleMute, isIntroPlaying]);
 
   return (
     <main className="relative w-screen h-screen overflow-hidden bg-[#02040a] text-white select-none">
@@ -152,7 +156,11 @@ export default function App() {
       {activeSector === 'home' && (
         <HeroOverlay
           onMeetHector={handleTriggerIntro}
-          onExplore={handleSelectSector}
+          onCloseIntro={() => setIsIntroPlaying(false)}
+          onExplore={(sec) => {
+            setIsIntroPlaying(false);
+            handleSelectSector(sec);
+          }}
           isIntroPlaying={isIntroPlaying}
         />
       )}
