@@ -59,30 +59,30 @@ export function CameraController({
       const progress = elapsedSec / totalDuration;
 
       if (progress < 1.0) {
-        if (progress < 0.45) {
-          // Surge towards avatar focal lock
-          const t = progress / 0.45;
+        if (progress < 0.42) {
+          // Surge towards avatar close-up
+          const t = progress / 0.42;
           const ease = t * t * (3 - 2 * t); // Smoothstep easing
           targetPos.current.set(
-            Math.sin(ease * Math.PI) * 0.4,
-            0.12,
-            7.5 - ease * 3.35 // Glide in to 4.15
+            Math.sin(ease * Math.PI) * 0.45,
+            0.15,
+            7.5 - ease * 4.1 // Zooms in from 7.5 to 3.4!
           );
-          targetLook.current.set(0, 0.08, 0);
-        } else if (progress < 0.72) {
+          targetLook.current.set(0, 0.1, 0);
+        } else if (progress < 0.75) {
           // Hold focal lock with subtle orbit
-          const holdPhase = (progress - 0.45) / 0.27;
+          const holdPhase = (progress - 0.42) / 0.33;
           targetPos.current.set(
-            Math.sin(holdPhase * Math.PI * 0.8) * 0.6,
-            0.12,
-            4.15
+            Math.sin(holdPhase * Math.PI * 0.6) * 0.5,
+            0.15,
+            3.4
           );
           targetLook.current.set(0, 0, 0);
         } else {
           // Return smoothly to hero overview
-          const t = (progress - 0.72) / 0.28;
+          const t = (progress - 0.75) / 0.25;
           const ease = t * t * (3 - 2 * t);
-          targetPos.current.set(0, 0, 4.15 + ease * 3.35);
+          targetPos.current.set(0, 0, 3.4 + ease * 4.1);
           targetLook.current.set(0, 0, 0);
         }
       } else {
@@ -105,8 +105,8 @@ export function CameraController({
     const desiredCamY = targetPos.current.y + parallaxY;
     const desiredCamZ = targetPos.current.z;
 
-    // Cinematic Damped Camera Spring (smooth lerp with delta compensation)
-    const dampFactor = reducedMotion ? 0.25 : Math.min(delta * 2.8, 0.08);
+    // Responsive cinematic spring: faster response during intro sequence so zoom is dramatic!
+    const dampFactor = isIntroPlaying ? 0.14 : (reducedMotion ? 0.25 : Math.min(delta * 2.8, 0.08));
     camera.position.x += (desiredCamX - camera.position.x) * dampFactor;
     camera.position.y += (desiredCamY - camera.position.y) * dampFactor;
     camera.position.z += (desiredCamZ - camera.position.z) * dampFactor;

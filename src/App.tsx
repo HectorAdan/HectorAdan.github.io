@@ -49,6 +49,8 @@ export default function App() {
   const handleTriggerIntro = useCallback(() => {
     setActiveSector('home');
     setIsIntroPlaying(true);
+    soundManager.setMuted(false);
+    setIsMuted(false);
     soundManager.playAvatarActivate();
   }, []);
 
