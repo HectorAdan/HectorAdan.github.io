@@ -109,21 +109,24 @@ export function HeroOverlay({ onMeetHector, onCloseIntro, onExplore, isIntroPlay
           className="fixed inset-0 z-50 pointer-events-auto flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
         >
           <div className="max-w-lg w-full bg-black/95 backdrop-blur-2xl border-2 border-cyan-400 rounded-2xl p-6 sm:p-8 shadow-[0_0_60px_rgba(0,240,255,0.6)] animate-slide-left text-left relative">
-            {/* Close Button in top corner */}
-            <button
-              onClick={onCloseIntro}
-              className="absolute top-4 right-4 p-2 rounded-lg bg-cyan-950/40 border border-cyan-500/30 text-cyan-300 hover:text-white hover:bg-cyan-900/60 hover:border-cyan-400 transition-all font-mono text-xs flex items-center gap-1"
-              title="Close Inspection (Esc)"
-              aria-label="Close avatar inspection"
-            >
-              <span>ESC</span>
-              <X className="w-4 h-4" />
-            </button>
+            {/* Top Header Bar with Telemetry on Left and Close Button on Right */}
+            <div className="flex items-center justify-between pb-3 mb-4 border-b border-cyan-900/60 font-mono text-xs">
+              {/* Telemetry Status on the Left Side */}
+              <div className="flex items-center gap-2 text-cyan-300">
+                <Volume2 className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
+                <span className="tracking-widest font-bold text-[11px]">NEURAL IDENTITY: FOCAL LOCK</span>
+              </div>
 
-            {/* Top Telemetry Line */}
-            <div className="flex items-center gap-2 pb-3 mb-4 border-b border-cyan-900/60 font-mono text-xs text-cyan-300">
-              <Volume2 className="w-4 h-4 text-cyan-400 animate-pulse" />
-              <span className="tracking-widest font-bold">NEURAL IDENTITY: FOCAL LOCK</span>
+              {/* Close Button on the Right Side */}
+              <button
+                onClick={onCloseIntro}
+                className="p-1.5 px-2.5 rounded-lg bg-cyan-950/60 border border-cyan-500/40 text-cyan-300 hover:text-white hover:bg-cyan-900/80 hover:border-cyan-400 transition-all font-mono text-xs inline-flex items-center gap-1.5"
+                title="Close Inspection (Esc)"
+                aria-label="Close avatar inspection"
+              >
+                <span>ESC / CLOSE</span>
+                <X className="w-3.5 h-3.5 text-cyan-400" />
+              </button>
             </div>
 
             {/* Avatar Header & Welcome Greeting */}
