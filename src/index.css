@@ -598,6 +598,8 @@ button:focus-visible, a:focus-visible {
 .identity-toolbar { position: absolute; top: 28px; left: 4.5%; right: 4.5%; display: flex; justify-content: space-between; align-items: center; }
 .identity-wordmark, .identity-eyebrow { font: 11px var(--font-mono); letter-spacing: .16em; color: #8aa8b8; }
 .identity-toolbar button { display: inline-flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 12px; color: #c3dde6; font-size: 14px; background: #07121ccc; border: 1px solid #7897a52b; border-radius: 4px; }
+.identity-toolbar-actions { display: flex; gap: 8px; }
+.portfolio-shell .identity-copy .identity-voice-status { margin-top: 12px; font-size: 13px; line-height: 1.5; color: #96b3c0; }
 .intro-overlay > .identity-copy { position: absolute; left: 7%; top: 50%; transform: translateY(-50%); width: min(440px, 37%); padding: 12px 0; background: transparent; border: 0; box-shadow: none; border-radius: 0; }
 .identity-copy h2 { margin: 28px 0 25px; font: 500 clamp(34px, 3.6vw, 56px)/1.13 var(--font-display); letter-spacing: -.045em; }
 .identity-copy h2 > span { color: #8bcbd7; }

@@ -11,6 +11,7 @@ import { OpeningSequence } from './components/ui/OpeningSequence';
 import { initialEntrancePhase } from './utils/entrance';
 import { isWebGLAvailable } from './utils/webglDetect';
 import type { AvatarRenderMode } from './components/canvas/HoloAvatar';
+import { useIntroductionVoice } from './utils/useIntroductionVoice';
 import type { IdentityStatus } from './utils/identityIntroduction';
 
 function storedMotionPreference() {
@@ -41,6 +42,7 @@ export default function App() {
   const [motionPaused, setMotionPaused] = useState(storedMotionPreference);
   const motionReduced = reducedMotion || motionPaused;
   const [webglSupported, setWebglSupported] = useState<boolean>(() => isWebGLAvailable());
+  const introduction = useIntroductionVoice(isIntroPlaying, isMuted, webglSupported ? identityStatus : 'unavailable', motionReduced);
   const [entrancePhase, setEntrancePhase] = useState(initialEntrancePhase);
   const [environmentReady, setEnvironmentReady] = useState(() => !webglSupported);
   const entranceOpen = entrancePhase !== 'done' && !motionReduced;
@@ -94,10 +96,11 @@ export default function App() {
       }
       setPreviewSector(null);
       lastPreviewSector.current = null;
+      introduction.voice.stop();
       setIsIntroPlaying(false);
       setActiveSector(sector);
     },
-    [activeSector, isIntroPlaying, rememberDialogOpener]
+    [activeSector, isIntroPlaying, rememberDialogOpener, introduction.voice]
   );
 
   const handlePreviewSector = useCallback((sector: SectorId | null) => {
@@ -116,22 +119,27 @@ export default function App() {
     setIntroRun(value => value + 1);
     soundManager.setMuted(false, false);
     setIsMuted(false);
+    introduction.voice.setMuted(false);
+    introduction.start();
     soundManager.playAvatarActivate();
-  }, [rememberDialogOpener]);
+  }, [rememberDialogOpener, introduction.start, introduction.voice]);
 
   const handleReplayIntro = useCallback(() => {
+    introduction.start();
     setIntroRun(value => value + 1);
     soundManager.playAvatarActivate();
-  }, []);
+  }, [introduction.start]);
 
   const handleIntroComplete = useCallback(() => {
+    introduction.voice.stop();
     setIsIntroPlaying(false);
-  }, []);
+  }, [introduction.voice]);
 
   const handleCloseIntro = useCallback(() => {
     if (isIntroPlaying) soundManager.playClose();
+    introduction.voice.stop();
     setIsIntroPlaying(false);
-  }, [isIntroPlaying]);
+  }, [isIntroPlaying, introduction.voice]);
 
   // Cycle avatar modes (Hologram -> Silhouette -> Matrix)
   const handleCycleAvatarMode = useCallback(() => {
@@ -261,6 +269,8 @@ export default function App() {
           onSelectSector={handleSelectSector}
           isIntroPlaying={isIntroPlaying}
           introRun={introRun}
+          introductionVoice={introduction.voice}
+          speechActive={introduction.active}
           onIdentityStatus={setIdentityStatus}
           previewSector={isIntroPlaying ? null : previewSector}
           onPreviewSector={handlePreviewSector}
@@ -305,14 +315,15 @@ export default function App() {
         <HeroOverlay
           onMeetHector={handleTriggerIntro}
           onCloseIntro={handleCloseIntro}
-          onExplore={(sec) => {
-            setIsIntroPlaying(false);
-            handleSelectSector(sec);
-          }}
+          onExplore={handleSelectSector}
           isIntroPlaying={isIntroPlaying}
           introRun={introRun}
           identityStatus={webglSupported ? identityStatus : 'unavailable'}
           onReplayIntro={handleReplayIntro}
+          voiceStatus={introduction.status}
+          onToggleVoice={introduction.toggle}
+          isMuted={isMuted}
+          onToggleMute={handleToggleMute}
           onReplayEntrance={motionReduced ? undefined : replayEntrance}
         />
       )}

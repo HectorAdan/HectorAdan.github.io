@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 // Canonical MediaPipe face topology, used only for this named 478-vertex POC.
-// The neutral face is untouched. These corrections stay in the preview's copy.
+// The neutral face is untouched. These corrections stay in the loaded rendering copy.
 const LEFT_LIDS = [[246, 7], [161, 163], [160, 144], [159, 145], [158, 153], [157, 154], [173, 155]];
 const RIGHT_LIDS = [[466, 249], [388, 390], [387, 373], [386, 374], [385, 380], [384, 381], [398, 382]];
 const UPPER_LIP = new Set([185, 40, 39, 37, 0, 267, 269, 270, 409, 191, 80, 81, 82, 13, 312, 311, 310, 415]);

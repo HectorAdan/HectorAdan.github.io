@@ -3,7 +3,9 @@ import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { HoloAvatar, type AvatarRenderMode } from './HoloAvatar';
 import { HolographicAvatar } from '../avatar/HolographicAvatar';
-import { loadAvatarSurface } from '../avatar/avatarSurface';
+import { loadTalkingSurface } from '../avatar/talkingSurface';
+import type { IntroductionVoice } from '../../utils/introductionVoice';
+import type { MotionPose } from '../avatar/talkingMotion';
 import { avatarPointFragment, avatarPointVertex } from '../avatar/avatarShaders';
 import { seededRandom } from './neuralGeometry';
 import { identityFrame, identityLookTarget, type IdentityPresentation, type IdentityStatus } from '../../utils/identityIntroduction';
@@ -14,6 +16,7 @@ export const IDENTITY_MODEL_PATH = 'models/hector-mediapipe-poc.glb';
 interface Props {
   isIntroPlaying: boolean;
   introRun: number;
+  introductionVoice?: IntroductionVoice;
   reducedMotion: boolean;
   compact: boolean;
   engaged: boolean;
@@ -63,9 +66,11 @@ function IdentityAtmosphere({ surface, compact, presentation, reducedMotion }: {
   </points>;
 }
 
-export function NeuralIdentity({ isIntroPlaying, introRun, reducedMotion, compact, onIdentityStatus, ...coreProps }: Props) {
+export function NeuralIdentity({ isIntroPlaying, introRun, introductionVoice, reducedMotion, compact, onIdentityStatus, ...coreProps }: Props) {
   const { size, gl, invalidate } = useThree();
   const [surface, setSurface] = useState<THREE.BufferGeometry | null>(null);
+  const speechPose = useRef<MotionPose>({ weights: { jawOpen: 0, eyeBlinkLeft: 0, eyeBlinkRight: 0 }, head: [0, 0, 0] });
+  const morphs = useMemo(() => ({ current: speechPose.current.weights }), []);
   const presentation = useRef({ core: 1, face: 0, assembly: 1 });
   const face = useRef<THREE.Group>(null);
   const elapsed = useRef(0), idle = useRef(0);
@@ -107,7 +112,7 @@ export function NeuralIdentity({ isIntroPlaying, introRun, reducedMotion, compac
   useEffect(() => {
     let cancelled = false, owned: THREE.BufferGeometry | null = null;
     onIdentityStatus?.('loading');
-    loadAvatarSurface(`${import.meta.env.BASE_URL}${IDENTITY_MODEL_PATH}`).then(geometry => {
+    loadTalkingSurface(`${import.meta.env.BASE_URL}${IDENTITY_MODEL_PATH}`, true, true).then(geometry => {
       if (cancelled) { geometry.dispose(); return; }
       owned = geometry; setSurface(geometry); onIdentityStatus?.('ready'); invalidate();
     }).catch(() => { if (!cancelled) onIdentityStatus?.('unavailable'); });
@@ -115,6 +120,7 @@ export function NeuralIdentity({ isIntroPlaying, introRun, reducedMotion, compac
   }, [onIdentityStatus, invalidate]);
   useFrame(({ camera }, delta) => {
     const dt = Math.min(delta, .05);
+    introductionVoice?.sample(reducedMotion, speechPose.current);
     if (isIntroPlaying && surface) elapsed.current += dt;
     const next = identityFrame(elapsed.current, isIntroPlaying, Boolean(surface), reducedMotion);
     const current = presentation.current;
@@ -131,9 +137,9 @@ export function NeuralIdentity({ isIntroPlaying, introRun, reducedMotion, compac
         : { yaw: 0, pitch: 0 };
       const settled = THREE.MathUtils.smoothstep(1 - current.assembly, .65, 1);
       const yaw = target.yaw * settled + Math.sin(idle.current * .18) * .015;
-      face.current.rotation.x = reducedMotion ? 0 : THREE.MathUtils.damp(face.current.rotation.x, target.pitch * settled, 5, dt);
-      face.current.rotation.y = reducedMotion ? 0 : THREE.MathUtils.damp(face.current.rotation.y, yaw, 5, dt);
-      face.current.rotation.z = reducedMotion ? 0 : Math.sin(idle.current * .13) * .008;
+      face.current.rotation.x = reducedMotion ? 0 : THREE.MathUtils.damp(face.current.rotation.x, (target.pitch + speechPose.current.head[0]) * settled, 5, dt);
+      face.current.rotation.y = reducedMotion ? 0 : THREE.MathUtils.damp(face.current.rotation.y, yaw + speechPose.current.head[1] * settled, 5, dt);
+      face.current.rotation.z = reducedMotion ? 0 : Math.sin(idle.current * .13) * .008 + speechPose.current.head[2] * settled;
     }
   }, -1);
   const portrait = size.width < 768;
@@ -141,7 +147,7 @@ export function NeuralIdentity({ isIntroPlaying, introRun, reducedMotion, compac
     <HoloAvatar {...coreProps} compact={compact} isIntroPlaying={isIntroPlaying} reducedMotion={reducedMotion} presentation={presentation} />
     {surface && <group position={portrait ? [0, 1.5, 0] : [1.15, .25, 0]}>
       <group ref={face} scale={.86} visible={false}>
-        <HolographicAvatar surface={surface} compact={compact} paused={reducedMotion} shell pathways presentation={presentation} surfaceOpacity={.06} projector={false} emergingIdentity />
+        <HolographicAvatar surface={surface} compact={compact} paused={reducedMotion} shell pathways presentation={presentation} surfaceOpacity={.06} projector={false} emergingIdentity morphPose={surface.hasAttribute('aJawDelta') ? morphs : undefined} />
         <IdentityAtmosphere surface={surface} compact={compact} presentation={presentation} reducedMotion={reducedMotion} />
       </group>
     </group>}

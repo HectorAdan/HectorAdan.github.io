@@ -1,7 +1,8 @@
-import { ArrowRight, RotateCcw, X } from 'lucide-react';
+import { ArrowRight, RotateCcw, X, Pause, Play, Volume2, VolumeX } from 'lucide-react';
 import { PERSONAL_INFO } from '../../data/portfolioData';
 import { SectorId } from '../../types/portfolio';
 import type { IdentityStatus } from '../../utils/identityIntroduction';
+import type { VoiceStatus } from '../../utils/introductionVoice';
 
 interface HeroOverlayProps {
   onMeetHector: () => void;
@@ -12,9 +13,14 @@ interface HeroOverlayProps {
   identityStatus: IdentityStatus;
   onReplayIntro: () => void;
   onReplayEntrance?: () => void;
+  voiceStatus: VoiceStatus;
+  onToggleVoice: () => void;
+  isMuted: boolean;
+  onToggleMute: () => void;
 }
 
-export function HeroOverlay({ onMeetHector, onCloseIntro, onExplore, isIntroPlaying, introRun, identityStatus, onReplayIntro, onReplayEntrance }: HeroOverlayProps) {
+export function HeroOverlay({ onMeetHector, onCloseIntro, onExplore, isIntroPlaying, introRun, identityStatus, onReplayIntro, onReplayEntrance, voiceStatus, onToggleVoice, isMuted, onToggleMute }: HeroOverlayProps) {
+  const voiceActive = voiceStatus === 'playing' || voiceStatus === 'waiting' || voiceStatus === 'loading';
   return <>
     <div className="hero-layout pointer-events-none" inert={isIntroPlaying} aria-hidden={isIntroPlaying || undefined}>
       <div className="hero-copy pointer-events-auto">
@@ -36,10 +42,15 @@ export function HeroOverlay({ onMeetHector, onCloseIntro, onExplore, isIntroPlay
       <div className="core-caption" aria-hidden="true"><span className="caption-line" /><span>01 / NEURAL CORE</span><span className="caption-sub">An evolving digital identity</span></div>
       <div className="hero-index" aria-hidden="true">ENGINEERING<br />WITH IMAGINATION</div>
     </div>
-    {isIntroPlaying && <div role="dialog" aria-modal="true" aria-labelledby="identity-greeting" aria-describedby="identity-description" className="intro-overlay identity-introduction" onClick={event => { if (event.target === event.currentTarget) onCloseIntro(); }}>
+    {isIntroPlaying && <div role="dialog" aria-modal="true" aria-labelledby="identity-greeting" aria-describedby="identity-description" className="intro-overlay identity-introduction" data-voice-status={voiceStatus} onClick={event => { if (event.target === event.currentTarget) onCloseIntro(); }}>
       <header className="identity-toolbar">
         <span className="identity-wordmark">THE INTELLIGENCE INTERFACE</span>
+        <div className="identity-toolbar-actions">
+        <button onClick={onToggleMute} aria-label={isMuted ? 'Unmute introduction' : 'Mute introduction'} aria-pressed={isMuted}>
+          {isMuted ? <VolumeX size={18} aria-hidden="true" /> : <Volume2 size={18} aria-hidden="true" />}
+        </button>
         <button onClick={onCloseIntro} aria-label="Close introduction" title="Close introduction (Escape)"><span>Close</span><X size={18} aria-hidden="true" /></button>
+        </div>
       </header>
       <div className="identity-copy">
         <div className="identity-text" key={introRun}>
@@ -49,10 +60,15 @@ export function HeroOverlay({ onMeetHector, onCloseIntro, onExplore, isIntroPlay
         <p className="identity-line identity-line-third">Welcome to my digital world.</p>
         </div>
         <div className="identity-actions">
+          <button className="hero-secondary" onClick={onToggleVoice} aria-label={voiceActive ? 'Pause introduction voice' : voiceStatus === 'error' ? 'Retry introduction voice' : 'Play introduction voice'}>
+            {voiceActive ? <Pause size={14} aria-hidden="true" /> : <Play size={14} aria-hidden="true" />}
+            {voiceActive ? 'Pause voice' : voiceStatus === 'error' ? 'Retry voice' : 'Play voice'}
+          </button>
           <button className="hero-secondary" onClick={onReplayIntro} aria-label="Replay introduction"><RotateCcw size={14} aria-hidden="true" />Replay introduction</button>
           <button className="hero-secondary" onClick={() => onExplore('projects')}>Explore projects <ArrowRight size={14} aria-hidden="true" /></button>
           <button className="hero-secondary" onClick={() => onExplore('about')}>About me <ArrowRight size={14} aria-hidden="true" /></button>
         </div>
+        {voiceStatus === 'error' && <p className="identity-voice-status" role="status">The voice couldn’t play. Try again using “Retry voice”.</p>}
       </div>
       {identityStatus !== 'ready' && <p className="identity-loading" role="status">{identityStatus === 'loading' ? 'Preparing my digital presence…' : 'A lightweight introduction. The 3D identity is unavailable on this visit.'}</p>}
     </div>}

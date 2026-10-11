@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { disposeSource } from './avatarSurface';
+import { disposeSource, prepareAvatarSurface } from './avatarSurface';
 import { MORPH_CHANNELS } from './morphChannels';
 import { localizeMorph } from './localizedMorphs';
 
@@ -60,8 +60,11 @@ export function prepareTalkingSurface(root: THREE.Object3D, localized = false): 
   } catch (error) { geometry.dispose(); throw error; }
 }
 
-export async function loadTalkingSurface(url: string, localized = false) {
+export async function loadTalkingSurface(url: string, localized = false, allowStatic = false) {
   const gltf = await new GLTFLoader().loadAsync(url);
-  try { return prepareTalkingSurface(gltf.scene, localized); }
+  try {
+    try { return prepareTalkingSurface(gltf.scene, localized); }
+    catch (error) { if (!allowStatic) throw error; return prepareAvatarSurface(gltf.scene); }
+  }
   finally { disposeSource(gltf.scene); }
 }

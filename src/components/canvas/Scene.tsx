@@ -6,6 +6,7 @@ import { ParticleField } from './ParticleField';
 import { NeuralNetwork } from './NeuralNetwork';
 import type { AvatarRenderMode } from './HoloAvatar';
 import { NeuralIdentity } from './NeuralIdentity';
+import type { IntroductionVoice } from '../../utils/introductionVoice';
 import type { IdentityStatus } from '../../utils/identityIntroduction';
 import { SectorBeacons } from './SectorBeacons';
 import { SectorPaths } from './SectorPaths';
@@ -22,6 +23,8 @@ export interface SceneProps {
   onSelectSector: (sector: SectorId) => void;
   isIntroPlaying: boolean;
   introRun?: number;
+  introductionVoice?: IntroductionVoice;
+  speechActive?: boolean;
   onIdentityStatus?: (status: IdentityStatus) => void;
   onIntroComplete?: () => void;
   reducedMotion?: boolean;
@@ -74,7 +77,7 @@ function FirstFrame({ onReady }: { onReady?: () => void }) {
   return null;
 }
 
-export function Scene({ activeSector, onSelectSector, isIntroPlaying, introRun = 0, onIdentityStatus, onIntroComplete, reducedMotion = false, avatarMode = 'hologram', onAvatarClick, previewSector, onPreviewSector, onReady, entrancePhase = 'done' }: SceneProps) {
+export function Scene({ activeSector, onSelectSector, isIntroPlaying, introRun = 0, introductionVoice, speechActive = false, onIdentityStatus, onIntroComplete, reducedMotion = false, avatarMode = 'hologram', onAvatarClick, previewSector, onPreviewSector, onReady, entrancePhase = 'done' }: SceneProps) {
   const labelPortal = useRef<HTMLDivElement>(null);
   const [failed, setFailed] = useState(false);
   const handleContextLost = useCallback(() => { setFailed(true); onIdentityStatus?.('unavailable'); onReady?.(); }, [onReady, onIdentityStatus]);
@@ -99,7 +102,7 @@ export function Scene({ activeSector, onSelectSector, isIntroPlaying, introRun =
     <div className="absolute inset-0 w-full h-full pointer-events-auto" aria-label="Interactive neural environment">
       <div ref={labelPortal} className="absolute inset-0 pointer-events-none" />
       <Canvas camera={CAMERA}
-        dpr={dpr} frameloop={reducedMotion || !visible ? 'demand' : 'always'}
+        dpr={dpr} frameloop={!visible || (reducedMotion && !speechActive) ? 'demand' : 'always'}
         gl={glOptions}
         onCreated={({ gl }) => { gl.setClearColor('#03060c', 1); }} fallback={<span>3D view unavailable. Use the portfolio navigation to explore.</span>}>
         <ambientLight intensity={.2} color="#24324c" />
@@ -108,7 +111,7 @@ export function Scene({ activeSector, onSelectSector, isIntroPlaying, introRun =
         <Suspense fallback={null}>
           <ParticleField reducedMotion={reducedMotion} compact={compact} />
           <NeuralNetwork activeSector={activeSector} onSelectSector={onSelectSector} reducedMotion={reducedMotion} compact={compact} />
-          <NeuralIdentity introRun={introRun} onIdentityStatus={onIdentityStatus} entrancePhase={entrancePhase} engaged={Boolean(previewSector) || activeSector !== 'home'} isIntroPlaying={isIntroPlaying} onAvatarClick={onAvatarClick} reducedMotion={reducedMotion} avatarMode={avatarMode} compact={compact} />
+          <NeuralIdentity introductionVoice={introductionVoice} introRun={introRun} onIdentityStatus={onIdentityStatus} entrancePhase={entrancePhase} engaged={Boolean(previewSector) || activeSector !== 'home'} isIntroPlaying={isIntroPlaying} onAvatarClick={onAvatarClick} reducedMotion={reducedMotion} avatarMode={avatarMode} compact={compact} />
           {!compact && <SectorBeacons previewSector={previewSector} onPreviewSector={onPreviewSector} activeSector={activeSector} onSelectSector={onSelectSector} reducedMotion={reducedMotion} portal={labelPortal} />}
           {!compact && <SectorPaths highlightedSector={activeSector === 'home' ? previewSector : activeSector} reducedMotion={reducedMotion} />}
           <CameraController introRun={introRun} entrancePhase={entrancePhase} activeSector={activeSector} isIntroPlaying={isIntroPlaying} onIntroComplete={onIntroComplete} reducedMotion={reducedMotion} />
