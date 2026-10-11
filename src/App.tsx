@@ -11,6 +11,7 @@ import { OpeningSequence } from './components/ui/OpeningSequence';
 import { initialEntrancePhase } from './utils/entrance';
 import { isWebGLAvailable } from './utils/webglDetect';
 import type { AvatarRenderMode } from './components/canvas/HoloAvatar';
+import type { IdentityStatus } from './utils/identityIntroduction';
 
 function storedMotionPreference() {
   try { return localStorage.getItem('portfolio-motion') === 'reduced'; }
@@ -32,6 +33,8 @@ export default function App() {
     dialogOpenerSelector.current = ['.hero-primary', '.hero-secondary'].find(selector => opener.matches(selector)) ?? null;
   }, []);
   const [isIntroPlaying, setIsIntroPlaying] = useState<boolean>(false);
+  const [introRun, setIntroRun] = useState(0);
+  const [identityStatus, setIdentityStatus] = useState<IdentityStatus>('loading');
   const [isMuted, setIsMuted] = useState<boolean>(true);
   const [avatarMode, setAvatarMode] = useState<AvatarRenderMode>('hologram');
   const [reducedMotion, setReducedMotion] = useState<boolean>(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches);
@@ -110,10 +113,16 @@ export default function App() {
     lastPreviewSector.current = null;
     setActiveSector('home');
     setIsIntroPlaying(true);
+    setIntroRun(value => value + 1);
     soundManager.setMuted(false, false);
     setIsMuted(false);
     soundManager.playAvatarActivate();
   }, [rememberDialogOpener]);
+
+  const handleReplayIntro = useCallback(() => {
+    setIntroRun(value => value + 1);
+    soundManager.playAvatarActivate();
+  }, []);
 
   const handleIntroComplete = useCallback(() => {
     setIsIntroPlaying(false);
@@ -243,7 +252,7 @@ export default function App() {
   }, [handleSelectSector, handleToggleMute, handleToggleMotion, handleCloseIntro, isIntroPlaying, entranceOpen, skipEntrance]);
 
   return (
-    <main data-sector={activeSector} data-motion={motionReduced ? 'reduced' : 'full'} data-entrance={entranceOpen ? entrancePhase : 'done'} className="portfolio-shell relative w-screen h-screen overflow-hidden bg-[#02040a] text-white select-none">
+    <main data-sector={activeSector} data-intro={isIntroPlaying} data-motion={motionReduced ? 'reduced' : 'full'} data-entrance={entranceOpen ? entrancePhase : 'done'} className="portfolio-shell relative w-screen h-screen overflow-hidden bg-[#02040a] text-white select-none">
       {/* 1. 3D Canvas Scene or Graceful WebGL Fallback */}
       <div className="portfolio-environment" inert={entranceOpen}>
       {webglSupported ? (
@@ -251,6 +260,8 @@ export default function App() {
           activeSector={activeSector}
           onSelectSector={handleSelectSector}
           isIntroPlaying={isIntroPlaying}
+          introRun={introRun}
+          onIdentityStatus={setIdentityStatus}
           previewSector={isIntroPlaying ? null : previewSector}
           onPreviewSector={handlePreviewSector}
           onIntroComplete={handleIntroComplete}
@@ -299,6 +310,9 @@ export default function App() {
             handleSelectSector(sec);
           }}
           isIntroPlaying={isIntroPlaying}
+          introRun={introRun}
+          identityStatus={webglSupported ? identityStatus : 'unavailable'}
+          onReplayIntro={handleReplayIntro}
           onReplayEntrance={motionReduced ? undefined : replayEntrance}
         />
       )}

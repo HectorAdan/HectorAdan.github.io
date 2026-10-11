@@ -7,11 +7,12 @@ import { ENTRANCE_DURATION, type EntrancePhase } from '../../utils/entrance';
 interface CameraControllerProps {
   activeSector: SectorId;
   isIntroPlaying: boolean;
+  introRun?: number;
   onIntroComplete?: () => void;
   reducedMotion?: boolean;
   entrancePhase?: EntrancePhase;
 }
-export function CameraController({ activeSector, isIntroPlaying, reducedMotion = false, entrancePhase = 'done' }: CameraControllerProps) {
+export function CameraController({ activeSector, isIntroPlaying, introRun = 0, reducedMotion = false, entrancePhase = 'done' }: CameraControllerProps) {
   const { camera, pointer, size, invalidate } = useThree();
   const target = useRef(new THREE.Vector3(0, 0, 9.5));
   const look = useRef(new THREE.Vector3());
@@ -42,8 +43,13 @@ export function CameraController({ activeSector, isIntroPlaying, reducedMotion =
       return;
     }
     if (isIntroPlaying) {
-      target.current.set(portrait ? 0 : 1.15, portrait ? 1.5 : .25, portrait ? distance : 7);
-      look.current.set(portrait ? 0 : 1.15, portrait ? 1.5 : .25, 0);
+      const depth = portrait ? distance : 7.4;
+      const halfHeight = Math.tan(THREE.MathUtils.degToRad((camera as THREE.PerspectiveCamera).fov / 2)) * depth;
+      // Leave text space beside the identity, or below it on narrow screens.
+      const x = portrait ? 0 : 1.15 - halfHeight * (size.width / size.height) * .32;
+      const y = portrait ? 1.5 - halfHeight * .4 : .25;
+      target.current.set(x, y, depth);
+      look.current.set(x, y, 0);
     } else if (activeSector === 'home' || portrait) {
       target.current.set(0, 0, distance);
       look.current.set(0, 0, 0);
@@ -63,7 +69,7 @@ export function CameraController({ activeSector, isIntroPlaying, reducedMotion =
       camera.lookAt(currentLook.current);
     }
     invalidate();
-  }, [activeSector, isIntroPlaying, reducedMotion, entrancePhase, camera, portrait, size.width, size.height, invalidate]);
+  }, [activeSector, isIntroPlaying, introRun, reducedMotion, entrancePhase, camera, portrait, size.width, size.height, invalidate]);
   useFrame((_, delta) => {
     if (reducedMotion) return;
     const dt = Math.min(delta, .05);
@@ -73,6 +79,7 @@ export function CameraController({ activeSector, isIntroPlaying, reducedMotion =
     // Quintic easing has zero velocity and acceleration at both ends.
     const ease = progress * progress * progress * (progress * (progress * 6 - 15) + 10);
     desired.current.lerpVectors(startPosition.current, target.current, ease);
+    if (isIntroPlaying) desired.current.z += ease * (1 - ease) * 1.2;
     const canParallax = activeSector === 'home' && !portrait && !isIntroPlaying && entrancePhase === 'done';
     parallax.current.x = THREE.MathUtils.damp(parallax.current.x, canParallax ? pointer.x * .16 : 0, 3.5, dt);
     parallax.current.y = THREE.MathUtils.damp(parallax.current.y, canParallax ? pointer.y * .11 : 0, 3.5, dt);

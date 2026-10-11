@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { seededRandom, neuralGraph, corePointVertex, neuralPointFragment, neuralLineVertex, neuralLineFragment, glowVertex, glowFragment } from './neuralGeometry';
 import type { EntrancePhase } from '../../utils/entrance';
 import { soundManager } from '../../utils/soundEffects';
+import type { IdentityPresentation } from '../../utils/identityIntroduction';
 
 // Keep the existing public component and appearance controls; Phase 1 renders a core, not an avatar.
 export type AvatarRenderMode = 'hologram' | 'silhouette' | 'matrix';
@@ -15,12 +16,15 @@ interface HoloAvatarProps {
   compact?: boolean;
   engaged?: boolean;
   entrancePhase?: EntrancePhase;
+  presentation?: IdentityPresentation;
 }
 
-export function HoloAvatar({ isIntroPlaying = false, onAvatarClick, reducedMotion = false, avatarMode = 'hologram', compact = false, engaged = false, entrancePhase = 'done' }: HoloAvatarProps) {
+export function HoloAvatar({ isIntroPlaying = false, onAvatarClick, reducedMotion = false, avatarMode = 'hologram', compact = false, engaged = false, entrancePhase = 'done', presentation }: HoloAvatarProps) {
   const group = useRef<THREE.Group>(null);
+  const root = useRef<THREE.Group>(null);
   const points = useRef<THREE.ShaderMaterial>(null);
   const lines = useRef<THREE.ShaderMaterial>(null);
+  const glow = useRef<THREE.ShaderMaterial>(null), heart = useRef<THREE.ShaderMaterial>(null);
   const hovered = useRef(false);
   const time = useRef(0);
   const entranceElapsed = useRef(0);
@@ -60,9 +64,11 @@ export function HoloAvatar({ isIntroPlaying = false, onAvatarClick, reducedMotio
     if (!group.current || !points.current || !lines.current) return;
     if (entrancePhase === 'playing') entranceElapsed.current += Math.min(delta, .05);
     const progress = reducedMotion || entrancePhase === 'done' ? 1 : entrancePhase === 'waiting' ? 0 : Math.min(1, entranceElapsed.current / 1.9);
-    const reveal = THREE.MathUtils.smoothstep(progress, 0, 1);
+    const presence = presentation?.current.core ?? 1;
+    if (root.current) root.current.visible = presence > .001;
+    const reveal = THREE.MathUtils.smoothstep(progress, 0, 1) * presence;
     pointUniforms.uReveal.value = reveal;
-    heartUniforms.uOpacity.value = .12 + reveal * .58;
+    heartUniforms.uOpacity.value = (.12 + reveal * .58) * presence;
     if (!reducedMotion) {
       time.current += Math.min(delta, .05);
       group.current.rotation.y = time.current * .045;
@@ -79,16 +85,22 @@ export function HoloAvatar({ isIntroPlaying = false, onAvatarClick, reducedMotio
     glowUniforms.uOpacity.value = reducedMotion ? opacity : THREE.MathUtils.damp(glowUniforms.uOpacity.value, opacity, 5, Math.min(delta, .05));
     const pointSize = (compact ? 3.8 : 3.6) + (lit ? .45 : 0);
     pointUniforms.uSize.value = reducedMotion ? pointSize : THREE.MathUtils.damp(pointUniforms.uSize.value, pointSize, 5, Math.min(delta, .05));
+    points.current.uniforms.uReveal.value = reveal;
+    points.current.uniforms.uSize.value = pointUniforms.uSize.value;
+    points.current.uniforms.uPixelRatio.value = gl.getPixelRatio();
+    lines.current.uniforms.uOpacity.value = lineUniforms.uOpacity.value;
+    if (glow.current) glow.current.uniforms.uOpacity.value = glowUniforms.uOpacity.value;
+    if (heart.current) heart.current.uniforms.uOpacity.value = heartUniforms.uOpacity.value;
   });
 
   return (
-    <group position={portrait ? [0, 1.5, 0] : [1.15, .25, 0]}>
+    <group ref={root} position={portrait ? [0, 1.5, 0] : [1.15, .25, 0]}>
       {/* Radial shader glows are confined to the nucleus: no full-scene bloom pass. */}
       <sprite scale={[5.6, 5.6, 1]}>
-        <shaderMaterial uniforms={glowUniforms} vertexShader={glowVertex} fragmentShader={glowFragment} transparent depthWrite={false} blending={THREE.AdditiveBlending} />
+        <shaderMaterial ref={glow} uniforms={glowUniforms} vertexShader={glowVertex} fragmentShader={glowFragment} transparent depthWrite={false} blending={THREE.AdditiveBlending} />
       </sprite>
       <sprite scale={[1.35, 1.35, 1]}>
-        <shaderMaterial uniforms={heartUniforms} vertexShader={glowVertex} fragmentShader={glowFragment} transparent depthWrite={false} blending={THREE.AdditiveBlending} />
+        <shaderMaterial ref={heart} uniforms={heartUniforms} vertexShader={glowVertex} fragmentShader={glowFragment} transparent depthWrite={false} blending={THREE.AdditiveBlending} />
       </sprite>
       <group ref={group} rotation={[.18, 0, -.15]} scale={portrait ? .92 : 1}>
         <points>

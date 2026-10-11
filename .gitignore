@@ -13,6 +13,9 @@ dist
 dist-ssr
 *.local
 
+# Local avatar reference images and videos
+/avatar-references/
+
 # TypeScript cache
 *.tsbuildinfo
 

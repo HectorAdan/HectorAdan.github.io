@@ -1,0 +1,52 @@
+.avatar-study { position: relative; width: 100%; height: 100dvh; overflow: auto; background: radial-gradient(ellipse at 66% 45%, #0b1827 0, #050a13 40%, #03060c 76%); color: #d9e7ed; }
+.avatar-study-header { position: absolute; z-index: 3; top: 0; left: 0; width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 30px 4.5%; }
+.avatar-return { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; color: #c0d6e0; text-decoration: none; font-size: 14px; }
+.avatar-return:hover { color: #a7f0f6; }
+.avatar-study-wordmark, .avatar-study-number { font: 11px var(--font-mono); letter-spacing: .13em; color: #8497ac; }
+.avatar-study-number { color: #7ba4b7; }
+.avatar-study-copy { position: absolute; top: 38%; left: 7%; width: 32%; pointer-events: none; z-index: 2; }
+.avatar-eyebrow { font: 11px var(--font-mono); letter-spacing: .17em; color: #8ec8d5; margin-bottom: 26px; }
+.avatar-study-copy h1 { font: 500 clamp(32px, 3.8vw, 62px)/1.1 var(--font-display); letter-spacing: -.045em; color: #dee9ef; }
+.avatar-study-copy h1 span { color: #83c8d8; }
+.avatar-study-description { margin-top: 25px; max-width: 310px; color: #94a7ba; font-size: 14px; line-height: 1.9; }
+.avatar-viewport { position: absolute; inset: 95px 0 160px 30%; cursor: grab; touch-action: none; }
+.avatar-viewport:active { cursor: grabbing; }
+.avatar-study-note { position: absolute; right: 4.5%; bottom: 150px; z-index: 2; text-align: right; color: #a9c4d1; font-size: 13px; pointer-events: none; }
+.avatar-study-note p { margin-top: 10px; color: #8094a9; font-size: 11px; }
+.avatar-signal { display: inline-block; height: 4px; width: 4px; border-radius: 50%; background: #9ddfea; margin: 0 9px 2px 0; box-shadow: 0 0 10px #9ddfea44; }
+.avatar-study-footer { position: absolute; z-index: 3; bottom: 0; width: 100%; padding: 27px 4.5%; display: flex; align-items: center; flex-wrap: wrap; gap: 22px; border-top: 1px solid #7ca6bb19; background: #03060c8c; }
+.avatar-view-controls, .avatar-layer-controls { display: flex; gap: 5px; }
+.avatar-study-footer button { min-height: 44px; padding: 0 15px; border: 1px solid transparent; border-radius: 4px; color: #91a6b9; font-size: 13px; transition: color .2s, background .2s; }
+.avatar-study-footer button:hover { color: #d4ecf0; }
+.avatar-study-footer button[aria-pressed="true"] { color: #d2edf1; border-color: #85b7c432; background: #81b7c00a; }
+.avatar-study-footer button:disabled { opacity: .5; cursor: default; }
+.avatar-layer-controls { margin-left: auto; }
+.avatar-motion { gap: 8px; }
+.avatar-study-hint { width: 100%; display: flex; justify-content: space-between; color: #728ba1; font: 11px var(--font-mono); }
+.avatar-unavailable { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; text-align: center; font-size: 14px; padding: 20px; }
+.avatar-unavailable strong { font: 500 24px var(--font-display); }
+.avatar-unavailable p { color: #91a6b9; }
+.avatar-unavailable a { color: #9ed6df; }
+.avatar-study[data-motion="reduced"] * { transition: none; }
+@media (max-width: 1000px) and (min-width: 768px) { .avatar-study-wordmark { display: none; } .avatar-study-footer button { padding: 0 10px; } }
+@media (max-width: 767px) {
+  .avatar-study-header { padding: max(12px, env(safe-area-inset-top)) 6% 12px; }
+  .avatar-study-wordmark { display: none; }
+  .avatar-study-copy { top: 88px; left: 7%; width: 86%; }
+  .avatar-eyebrow { font-size: 10px; margin-bottom: 12px; }
+  .avatar-study-copy h1 { font-size: clamp(28px, 8vw, 38px); }
+  .avatar-study-copy h1 br { display: none; }
+  .avatar-study-description { display: none; }
+  .avatar-viewport { inset: 170px 0 208px; }
+  .avatar-study-note { left: 6%; right: 6%; bottom: 180px; text-align: center; font-size: 12px; }
+  .avatar-study-note p { font-size: 10px; margin-top: 7px; }
+  .avatar-study-footer { padding: 14px 6% max(16px, env(safe-area-inset-bottom)); gap: 8px; justify-content: center; }
+  .avatar-view-controls, .avatar-layer-controls { margin: 0; justify-content: center; }
+  .avatar-study[data-model="mask"] .avatar-layer-controls { width: 100%; flex-wrap: wrap; }
+  .avatar-study-footer button { padding: 0 13px; font-size: 12px; }
+  .avatar-study-hint { margin-top: 9px; font-size: 10px; }
+}
+@media (max-height: 600px) {
+  .avatar-study { min-height: 600px; }
+  .avatar-study-description { display: none; }
+}

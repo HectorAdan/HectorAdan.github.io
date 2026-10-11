@@ -34,7 +34,8 @@ function LoadingScene(props: SceneProps) {
 }
 
 export function Environment(props: SceneProps) {
-  return <EnvironmentBoundary onFailure={props.onReady} fallback={<WebGLFallback activeSector={props.activeSector} onSelectSector={props.onSelectSector} reducedMotion={props.reducedMotion} />}>
+  const onFailure = useCallback(() => { props.onIdentityStatus?.('unavailable'); props.onReady?.(); }, [props.onIdentityStatus, props.onReady]);
+  return <EnvironmentBoundary onFailure={onFailure} fallback={<WebGLFallback activeSector={props.activeSector} onSelectSector={props.onSelectSector} reducedMotion={props.reducedMotion} />}>
     <LoadingScene {...props} />
   </EnvironmentBoundary>;
 }

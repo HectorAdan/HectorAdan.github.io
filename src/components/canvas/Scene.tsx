@@ -4,7 +4,9 @@ import * as THREE from 'three';
 import { SectorId } from '../../types/portfolio';
 import { ParticleField } from './ParticleField';
 import { NeuralNetwork } from './NeuralNetwork';
-import { HoloAvatar, AvatarRenderMode } from './HoloAvatar';
+import type { AvatarRenderMode } from './HoloAvatar';
+import { NeuralIdentity } from './NeuralIdentity';
+import type { IdentityStatus } from '../../utils/identityIntroduction';
 import { SectorBeacons } from './SectorBeacons';
 import { SectorPaths } from './SectorPaths';
 import { CameraController } from './CameraController';
@@ -19,6 +21,8 @@ export interface SceneProps {
   onPreviewSector: (sector: SectorId | null) => void;
   onSelectSector: (sector: SectorId) => void;
   isIntroPlaying: boolean;
+  introRun?: number;
+  onIdentityStatus?: (status: IdentityStatus) => void;
   onIntroComplete?: () => void;
   reducedMotion?: boolean;
   avatarMode?: AvatarRenderMode;
@@ -70,10 +74,10 @@ function FirstFrame({ onReady }: { onReady?: () => void }) {
   return null;
 }
 
-export function Scene({ activeSector, onSelectSector, isIntroPlaying, onIntroComplete, reducedMotion = false, avatarMode = 'hologram', onAvatarClick, previewSector, onPreviewSector, onReady, entrancePhase = 'done' }: SceneProps) {
+export function Scene({ activeSector, onSelectSector, isIntroPlaying, introRun = 0, onIdentityStatus, onIntroComplete, reducedMotion = false, avatarMode = 'hologram', onAvatarClick, previewSector, onPreviewSector, onReady, entrancePhase = 'done' }: SceneProps) {
   const labelPortal = useRef<HTMLDivElement>(null);
   const [failed, setFailed] = useState(false);
-  const handleContextLost = useCallback(() => { setFailed(true); onReady?.(); }, [onReady]);
+  const handleContextLost = useCallback(() => { setFailed(true); onIdentityStatus?.('unavailable'); onReady?.(); }, [onReady, onIdentityStatus]);
   const [visible, setVisible] = useState(() => !document.hidden);
   const [compact, setCompact] = useState(() => window.matchMedia('(max-width: 767px), (pointer: coarse)').matches);
   const dpr = useMemo<[number, number]>(() => [1, compact ? 1.15 : 1.65], [compact]);
@@ -91,7 +95,7 @@ export function Scene({ activeSector, onSelectSector, isIntroPlaying, onIntroCom
   }, []);
   const fallback = <WebGLFallback activeSector={activeSector} onSelectSector={onSelectSector} reducedMotion={reducedMotion} />;
   if (failed) return fallback;
-  return <SceneBoundary fallback={fallback} onFailure={onReady}>
+  return <SceneBoundary fallback={fallback} onFailure={handleContextLost}>
     <div className="absolute inset-0 w-full h-full pointer-events-auto" aria-label="Interactive neural environment">
       <div ref={labelPortal} className="absolute inset-0 pointer-events-none" />
       <Canvas camera={CAMERA}
@@ -104,10 +108,10 @@ export function Scene({ activeSector, onSelectSector, isIntroPlaying, onIntroCom
         <Suspense fallback={null}>
           <ParticleField reducedMotion={reducedMotion} compact={compact} />
           <NeuralNetwork activeSector={activeSector} onSelectSector={onSelectSector} reducedMotion={reducedMotion} compact={compact} />
-          <HoloAvatar entrancePhase={entrancePhase} engaged={Boolean(previewSector) || activeSector !== 'home'} isIntroPlaying={isIntroPlaying} onAvatarClick={onAvatarClick} reducedMotion={reducedMotion} avatarMode={avatarMode} compact={compact} />
+          <NeuralIdentity introRun={introRun} onIdentityStatus={onIdentityStatus} entrancePhase={entrancePhase} engaged={Boolean(previewSector) || activeSector !== 'home'} isIntroPlaying={isIntroPlaying} onAvatarClick={onAvatarClick} reducedMotion={reducedMotion} avatarMode={avatarMode} compact={compact} />
           {!compact && <SectorBeacons previewSector={previewSector} onPreviewSector={onPreviewSector} activeSector={activeSector} onSelectSector={onSelectSector} reducedMotion={reducedMotion} portal={labelPortal} />}
           {!compact && <SectorPaths highlightedSector={activeSector === 'home' ? previewSector : activeSector} reducedMotion={reducedMotion} />}
-          <CameraController entrancePhase={entrancePhase} activeSector={activeSector} isIntroPlaying={isIntroPlaying} onIntroComplete={onIntroComplete} reducedMotion={reducedMotion} />
+          <CameraController introRun={introRun} entrancePhase={entrancePhase} activeSector={activeSector} isIntroPlaying={isIntroPlaying} onIntroComplete={onIntroComplete} reducedMotion={reducedMotion} />
           <AdaptiveQuality />
           <ContextGuard onLost={handleContextLost} />
           <FirstFrame onReady={onReady} />
