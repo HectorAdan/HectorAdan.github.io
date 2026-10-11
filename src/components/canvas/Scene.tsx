@@ -1,98 +1,118 @@
-import { Canvas } from '@react-three/fiber';
-import { Suspense } from 'react';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { Component, Suspense, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import * as THREE from 'three';
 import { SectorId } from '../../types/portfolio';
 import { ParticleField } from './ParticleField';
 import { NeuralNetwork } from './NeuralNetwork';
 import { HoloAvatar, AvatarRenderMode } from './HoloAvatar';
 import { SectorBeacons } from './SectorBeacons';
+import { SectorPaths } from './SectorPaths';
 import { CameraController } from './CameraController';
+import { WebGLFallback } from '../ui/WebGLFallback';
+import type { EntrancePhase } from '../../utils/entrance';
 
-interface SceneProps {
+const CAMERA = { position: [0, 0, 9.5] as [number, number, number], fov: 44, near: .1, far: 80 };
+
+export interface SceneProps {
   activeSector: SectorId;
+  previewSector: SectorId | null;
+  onPreviewSector: (sector: SectorId | null) => void;
   onSelectSector: (sector: SectorId) => void;
   isIntroPlaying: boolean;
   onIntroComplete?: () => void;
   reducedMotion?: boolean;
   avatarMode?: AvatarRenderMode;
   onAvatarClick?: () => void;
+  onReady?: () => void;
+  entrancePhase?: EntrancePhase;
+}
+class SceneBoundary extends Component<{ children: ReactNode; fallback: ReactNode; onFailure?: () => void }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() { return { failed: true }; }
+  componentDidCatch() { this.props.onFailure?.(); }
+  render() { return this.state.failed ? this.props.fallback : this.props.children; }
 }
 
-export function Scene({
-  activeSector,
-  onSelectSector,
-  isIntroPlaying,
-  onIntroComplete,
-  reducedMotion = false,
-  avatarMode = 'hologram',
-  onAvatarClick,
-}: SceneProps) {
-  return (
-    <div className="absolute inset-0 w-full h-full pointer-events-auto">
-      <Canvas
-        camera={{ position: [0, 0, 7.5], fov: 44, near: 0.1, far: 120 }}
-        dpr={[1, Math.min(typeof window !== 'undefined' ? window.devicePixelRatio : 2, 2)]}
-        gl={{
-          antialias: true,
-          alpha: true,
-          powerPreference: 'high-performance',
-        }}
-        onCreated={({ gl }) => {
-          gl.setClearColor('#010309', 1);
-        }}
-      >
-        {/* Cinematic Atmospheric Lighting Scheme */}
-        <ambientLight intensity={0.7} color="#050e26" />
+// A one-time downshift after warm-up; no React state updates inside the render loop.
+function AdaptiveQuality() {
+  const { setDpr } = useThree();
+  const sample = useRef({ frames: 0, slow: 0, done: false });
+  useFrame((_, delta) => {
+    const s = sample.current;
+    if (s.done || document.hidden) return;
+    s.frames++;
+    if (s.frames > 60 && delta > 1 / 35) s.slow++;
+    if (s.frames === 240) {
+      if (s.slow > 90) setDpr(.85);
+      s.done = true;
+    }
+  });
+  return null;
+}
+function ContextGuard({ onLost }: { onLost: () => void }) {
+  const { gl } = useThree();
+  useEffect(() => {
+    const canvas = gl.domElement;
+    const lost = (event: Event) => { event.preventDefault(); onLost(); };
+    canvas.addEventListener('webglcontextlost', lost);
+    return () => canvas.removeEventListener('webglcontextlost', lost);
+  }, [gl, onLost]);
+  return null;
+}
 
-        {/* Key Light (Restrained Cyan from top-front) */}
-        <directionalLight position={[6, 9, 6]} intensity={2.2} color="#00f0ff" />
+function FirstFrame({ onReady }: { onReady?: () => void }) {
+  const reported = useRef(false);
+  useFrame(() => {
+    if (reported.current) return;
+    reported.current = true;
+    onReady?.();
+  });
+  return null;
+}
 
-        {/* Dedicated Avatar Backlight / Rim Light (Creates Radiant Silhouette) */}
-        <pointLight position={[0, 0, -1.0]} intensity={3.5} color="#00f0ff" distance={10} />
-
-        {/* Left Fill Accent (Electric Sky Blue) */}
-        <pointLight position={[-8, 4, 3]} intensity={1.8} color="#38bdf8" distance={24} />
-
-        {/* Bottom-Right Deep Counter-Light (Soft Indigo Depth) */}
-        <pointLight position={[6, -6, 2]} intensity={1.4} color="#6366f1" distance={22} />
-
-        {/* Spatial Atmospheric Fog for Cinematic Depth Falloff */}
-        <fog attach="fog" args={['#010309', 6, 35]} />
-
+export function Scene({ activeSector, onSelectSector, isIntroPlaying, onIntroComplete, reducedMotion = false, avatarMode = 'hologram', onAvatarClick, previewSector, onPreviewSector, onReady, entrancePhase = 'done' }: SceneProps) {
+  const labelPortal = useRef<HTMLDivElement>(null);
+  const [failed, setFailed] = useState(false);
+  const handleContextLost = useCallback(() => { setFailed(true); onReady?.(); }, [onReady]);
+  const [visible, setVisible] = useState(() => !document.hidden);
+  const [compact, setCompact] = useState(() => window.matchMedia('(max-width: 767px), (pointer: coarse)').matches);
+  const dpr = useMemo<[number, number]>(() => [1, compact ? 1.15 : 1.65], [compact]);
+  const glOptions = useMemo(() => ({ antialias: !compact, alpha: false, powerPreference: 'high-performance' as const, toneMapping: THREE.ACESFilmicToneMapping }), [compact]);
+  useEffect(() => {
+    const query = window.matchMedia('(max-width: 767px), (pointer: coarse)');
+    const update = () => setCompact(query.matches);
+    query.addEventListener('change', update);
+    return () => query.removeEventListener('change', update);
+  }, []);
+  useEffect(() => {
+    const update = () => setVisible(!document.hidden);
+    document.addEventListener('visibilitychange', update);
+    return () => document.removeEventListener('visibilitychange', update);
+  }, []);
+  const fallback = <WebGLFallback activeSector={activeSector} onSelectSector={onSelectSector} reducedMotion={reducedMotion} />;
+  if (failed) return fallback;
+  return <SceneBoundary fallback={fallback} onFailure={onReady}>
+    <div className="absolute inset-0 w-full h-full pointer-events-auto" aria-label="Interactive neural environment">
+      <div ref={labelPortal} className="absolute inset-0 pointer-events-none" />
+      <Canvas camera={CAMERA}
+        dpr={dpr} frameloop={reducedMotion || !visible ? 'demand' : 'always'}
+        gl={glOptions}
+        onCreated={({ gl }) => { gl.setClearColor('#03060c', 1); }} fallback={<span>3D view unavailable. Use the portfolio navigation to explore.</span>}>
+        <ambientLight intensity={.2} color="#24324c" />
+        <directionalLight position={[4, 5, 3]} intensity={.7} color="#85cbdc" />
+        <fogExp2 attach="fog" args={['#03060c', .025]} />
         <Suspense fallback={null}>
-          {/* Layered Multi-Tier Particle System (Foreground, Midground, Deep Cosmos) */}
-          <ParticleField reducedMotion={reducedMotion} />
-
-          {/* Layered Neural Graph & Luminous Arterial Conduits */}
-          <NeuralNetwork
-            activeSector={activeSector}
-            onSelectSector={onSelectSector}
-            reducedMotion={reducedMotion}
-          />
-
-          {/* Central Main Character - Holographic Avatar Nexus */}
-          <HoloAvatar
-            isIntroPlaying={isIntroPlaying}
-            onAvatarClick={onAvatarClick}
-            reducedMotion={reducedMotion}
-            avatarMode={avatarMode}
-          />
-
-          {/* Interactive Navigation Sector Beacons */}
-          <SectorBeacons
-            activeSector={activeSector}
-            onSelectSector={onSelectSector}
-            reducedMotion={reducedMotion}
-          />
-
-          {/* Cinematic Inertia Camera Controller */}
-          <CameraController
-            activeSector={activeSector}
-            isIntroPlaying={isIntroPlaying}
-            onIntroComplete={onIntroComplete}
-            reducedMotion={reducedMotion}
-          />
+          <ParticleField reducedMotion={reducedMotion} compact={compact} />
+          <NeuralNetwork activeSector={activeSector} onSelectSector={onSelectSector} reducedMotion={reducedMotion} compact={compact} />
+          <HoloAvatar entrancePhase={entrancePhase} engaged={Boolean(previewSector) || activeSector !== 'home'} isIntroPlaying={isIntroPlaying} onAvatarClick={onAvatarClick} reducedMotion={reducedMotion} avatarMode={avatarMode} compact={compact} />
+          {!compact && <SectorBeacons previewSector={previewSector} onPreviewSector={onPreviewSector} activeSector={activeSector} onSelectSector={onSelectSector} reducedMotion={reducedMotion} portal={labelPortal} />}
+          {!compact && <SectorPaths highlightedSector={activeSector === 'home' ? previewSector : activeSector} reducedMotion={reducedMotion} />}
+          <CameraController entrancePhase={entrancePhase} activeSector={activeSector} isIntroPlaying={isIntroPlaying} onIntroComplete={onIntroComplete} reducedMotion={reducedMotion} />
+          <AdaptiveQuality />
+          <ContextGuard onLost={handleContextLost} />
+          <FirstFrame onReady={onReady} />
         </Suspense>
       </Canvas>
     </div>
-  );
+  </SceneBoundary>;
 }

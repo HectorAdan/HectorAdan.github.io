@@ -2,8 +2,7 @@ export function isWebGLAvailable(): boolean {
   try {
     const canvas = document.createElement('canvas');
     return Boolean(
-      window.WebGLRenderingContext &&
-        (canvas.getContext('webgl') || canvas.getContext('experimental-webgl'))
+      window.WebGL2RenderingContext && canvas.getContext('webgl2')
     );
   } catch {
     return false;

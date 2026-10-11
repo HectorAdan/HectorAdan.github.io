@@ -1,0 +1,56 @@
+.portfolio-environment { position: absolute; inset: 0; }
+.portfolio-interface { display: contents; }
+.opening-sequence { position: absolute; inset: 0; z-index: 80; overflow: hidden; }
+.opening-veil { position: absolute; inset: 0; background: #03060c; opacity: .9; pointer-events: none; }
+.opening-wordmark { position: absolute; top: 28px; left: 4.5%; font: 500 34px/1 var(--font-display); letter-spacing: -.09em; color: #cad9e3; }
+.opening-wordmark span, .opening-copy p > span { color: #83c4d2; }
+.opening-skip { position: absolute; top: 24px; right: 4.5%; min-height: 44px; padding: 10px 16px; gap: 16px; border: 1px solid #8baac535; border-radius: 3px; color: #bccbd5; font-size: 13px; background: #07101c66; }
+.opening-skip:hover { border-color: #9bc3d477; color: #eef6f8; }
+.opening-copy { position: absolute; top: 73%; left: 50%; width: min(90%, 680px); transform: translate(-50%, -50%); text-align: center; opacity: 0; }
+.opening-eyebrow { font: 10px var(--font-mono); text-transform: uppercase; letter-spacing: .24em; color: #94b7c8; }
+.portfolio-shell .opening-sequence .opening-copy p { font: 500 clamp(30px, 4vw, 48px)/1.2 var(--font-display); letter-spacing: -.04em; color: #dfebf1; margin: 14px 0 12px; }
+.opening-caption { color: #8a9bae; font-size: 13px; letter-spacing: .04em; }
+.opening-progress { position: absolute; bottom: 8%; left: 50%; width: 130px; height: 1px; transform: translateX(-50%); background: #94b5c21c; overflow: hidden; }
+.opening-progress > span { display: block; width: 100%; height: 100%; background: #9fc8d8; transform-origin: left; transform: scaleX(0); }
+.opening-sequence[data-phase="playing"] .opening-veil { animation: entrance-veil 1.4s ease-out both; }
+.opening-sequence[data-phase="playing"] .opening-copy { animation: entrance-title 2.6s ease both; }
+.opening-sequence[data-phase="playing"] .opening-progress > span { animation: entrance-progress 3.6s cubic-bezier(.4, 0, .2, 1) both; }
+.opening-sequence[data-phase="playing"] .opening-wordmark,
+.opening-sequence[data-phase="playing"] .opening-progress { animation: entrance-overlay-exit .5s 3s ease both; }
+
+.portfolio-shell[data-entrance="waiting"] .interface-header,
+.portfolio-shell[data-entrance="waiting"] .hero-layout,
+.portfolio-shell[data-entrance="waiting"] .interface-footer { opacity: 0; }
+.portfolio-shell:not([data-entrance="done"]) .spatial-label,
+.portfolio-shell:not([data-entrance="done"]) .environment-loading { visibility: hidden; }
+.portfolio-shell[data-entrance="playing"] .hero-eyebrow { animation: entrance-reveal .7s 2s ease both; }
+.portfolio-shell[data-entrance="playing"] .hero-copy h1 { animation: entrance-reveal .9s 2.15s ease both; }
+.portfolio-shell[data-entrance="playing"] .hero-role { animation: entrance-reveal .8s 2.35s ease both; }
+.portfolio-shell[data-entrance="playing"] .hero-description { animation: entrance-reveal .8s 2.5s ease both; }
+.portfolio-shell[data-entrance="playing"] .hero-actions { animation: entrance-reveal .7s 2.65s ease both; }
+.portfolio-shell[data-entrance="playing"] .hero-credentials { animation: entrance-reveal .7s 2.8s ease both; }
+.portfolio-shell[data-entrance="playing"] .interface-header,
+.portfolio-shell[data-entrance="playing"] .interface-footer,
+.portfolio-shell[data-entrance="playing"] .hero-index,
+.portfolio-shell[data-entrance="playing"] .core-caption,
+.portfolio-shell[data-entrance="playing"] .hero-replay { animation: entrance-reveal .6s 3s ease both; }
+.hero-replay { margin-top: 10px; padding: 10px 0; min-height: 44px; gap: 9px; font-size: 12px; color: #8fa7b9; pointer-events: auto; }
+.hero-replay:hover { color: #cee9ef; }
+@keyframes entrance-veil { from { opacity: .9; } to { opacity: 0; } }
+@keyframes entrance-title {
+  0% { opacity: 0; transform: translate(-50%, calc(-50% + 12px)); }
+  30%, 65% { opacity: 1; transform: translate(-50%, -50%); }
+  100% { opacity: 0; transform: translate(-50%, calc(-50% - 8px)); }
+}
+@keyframes entrance-reveal { from { opacity: 0; translate: 0 14px; } to { opacity: 1; translate: 0 0; } }
+@keyframes entrance-overlay-exit { to { opacity: 0; } }
+@keyframes entrance-progress { to { transform: scaleX(1); } }
+@media (max-width: 767px) {
+  .opening-wordmark { top: 20px; left: 7%; font-size: 29px; }
+  .opening-skip { top: 16px; right: 7%; }
+  .opening-copy { top: 72%; }
+  .opening-eyebrow { font-size: 9px; letter-spacing: .16em; }
+  .opening-progress { bottom: 10%; }
+  .hero-replay { position: static; margin-top: 12px; font-size: 12px; }
+}
+@media (max-height: 600px) { .opening-copy { top: 74%; } .portfolio-shell .opening-sequence .opening-copy p { font-size: 30px; margin: 8px 0; } .opening-progress { bottom: 5%; } }

@@ -1,4 +1,5 @@
-import { ArrowRight, Orbit, Compass, Volume2, X } from 'lucide-react';
+import { ArrowRight, RotateCcw, Volume2, X } from 'lucide-react';
+import { useState } from 'react';
 import { PERSONAL_INFO } from '../../data/portfolioData';
 import { SectorId } from '../../types/portfolio';
 
@@ -7,97 +8,32 @@ interface HeroOverlayProps {
   onCloseIntro: () => void;
   onExplore: (sector: SectorId) => void;
   isIntroPlaying: boolean;
+  onReplayEntrance?: () => void;
 }
 
-export function HeroOverlay({ onMeetHector, onCloseIntro, onExplore, isIntroPlaying }: HeroOverlayProps) {
+export function HeroOverlay({ onMeetHector, onCloseIntro, onExplore, isIntroPlaying, onReplayEntrance }: HeroOverlayProps) {
+  const [portraitAvailable, setPortraitAvailable] = useState(true);
   return (
     <>
-      <div className="absolute inset-0 z-20 pointer-events-none flex flex-col justify-between p-6 sm:p-10 lg:p-14">
-        {/* Top spacing below header */}
-        <div className="h-16" />
-
-        {/* Hero Content: Framed cleanly in the lower-left quadrant to let the 3D avatar breathe */}
-        <div className="max-w-xl pointer-events-auto transition-all duration-700">
-          {/* Status Pill */}
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-950/40 border border-cyan-500/30 backdrop-blur-md mb-4 shadow-[0_0_15px_rgba(0,240,255,0.12)] animate-fade-in">
-            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" />
-            <span className="font-mono text-[11px] text-cyan-200 tracking-wider font-semibold">
-              DIGITAL TWIN // ONLINE
-            </span>
+      <div className="hero-layout pointer-events-none">
+        <div className="hero-copy pointer-events-auto">
+          <div className="hero-eyebrow"><span /> THE INTELLIGENCE INTERFACE</div>
+          <h1>{PERSONAL_INFO.name.split(' ')[0]}<br /><span>{PERSONAL_INFO.name.split(' ').slice(1).join(' ')}</span><span className="name-period">.</span></h1>
+          <p className="hero-role">{PERSONAL_INFO.title}</p>
+          <p className="hero-description">{PERSONAL_INFO.tagline}</p>
+          <div className="hero-actions">
+            <button className="hero-primary" onClick={() => onExplore('projects')}>Explore projects <ArrowRight size={16} /></button>
+            <button className="hero-secondary" onClick={onMeetHector} aria-label="Meet Hector">Meet Hector <span aria-hidden="true">↗</span></button>
           </div>
-
-          {/* Name & Title */}
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white mb-2 font-display drop-shadow-[0_4px_16px_rgba(0,0,0,0.9)]">
-            <span className="bg-gradient-to-r from-white via-cyan-100 to-cyan-400 bg-clip-text text-transparent">
-              {PERSONAL_INFO.name}
-            </span>
-          </h1>
-
-          <div className="flex items-center gap-2 text-cyan-400 font-mono text-xs sm:text-sm mb-4 tracking-widest uppercase">
-            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
-            <span>{PERSONAL_INFO.title}</span>
+          <div className="hero-credentials">
+            <div><strong>8+ years</strong><span>Production development</span></div>
+            <div><strong>M.S. & B.S.</strong><span>Computer science</span></div>
+            <div><strong>Fullstack</strong><span>React · TypeScript</span></div>
           </div>
-
-          {/* Short Introduction */}
-          <p className="text-gray-300 text-xs sm:text-sm leading-relaxed mb-6 max-w-lg backdrop-blur-md bg-black/40 p-3.5 rounded-xl border border-cyan-950/60 shadow-xl">
-            "{PERSONAL_INFO.tagline}"
-          </p>
-
-          {/* Primary Call to Actions */}
-          <div className="flex flex-wrap items-center gap-3">
-            {/* Obvious "Meet Hector" Button */}
-            <button
-              onClick={onMeetHector}
-              className={`relative group px-6 py-3 rounded-xl font-mono text-xs sm:text-sm font-semibold tracking-wider inline-flex items-center gap-2.5 w-auto flex-shrink-0 transition-all duration-300 overflow-hidden ${
-                isIntroPlaying
-                  ? 'bg-cyan-400 text-black shadow-[0_0_35px_rgba(0,240,255,0.9)] scale-[1.03]'
-                  : 'bg-cyan-500 text-black hover:bg-cyan-400 shadow-[0_0_20px_rgba(0,240,255,0.4)] hover:shadow-[0_0_30px_rgba(0,240,255,0.7)] hover:scale-[1.02] active:scale-[0.98]'
-              }`}
-              aria-label="Initiate Meet Hector introduction animation"
-            >
-              <Orbit className={`w-4 h-4 ${isIntroPlaying ? 'animate-spin' : 'group-hover:rotate-180 transition-transform duration-500'}`} />
-              <span>{isIntroPlaying ? 'FOCAL LOCK ACTIVE...' : 'MEET HECTOR'}</span>
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </button>
-
-            {/* Explore Matrix / About Button */}
-            <button
-              onClick={() => onExplore('about')}
-              className="px-5 py-3 rounded-xl font-mono text-xs sm:text-sm text-cyan-300 bg-black/60 border border-cyan-500/40 hover:border-cyan-400 hover:bg-cyan-950/50 backdrop-blur-md transition-all inline-flex items-center gap-2 w-auto flex-shrink-0"
-            >
-              <Compass className="w-4 h-4 text-cyan-400" />
-              <span>EXPLORE MATRIX</span>
-            </button>
-          </div>
-
-          {/* Minimal Telemetry Highlights */}
-          <div className="grid grid-cols-3 gap-2 mt-6 pt-4 border-t border-cyan-900/30 max-w-md font-mono text-xs">
-            <div>
-              <div className="text-cyan-400 font-bold text-sm">8+ YEARS</div>
-              <div className="text-gray-400 text-[10px]">PRODUCTION DEV</div>
-            </div>
-            <div>
-              <div className="text-cyan-400 font-bold text-sm">M.S. & B.S.</div>
-              <div className="text-gray-400 text-[10px]">COMPUTER SCIENCE</div>
-            </div>
-            <div>
-              <div className="text-cyan-400 font-bold text-sm">FULLSTACK</div>
-              <div className="text-gray-400 text-[10px]">REACT • TYPESCRIPT</div>
-            </div>
-          </div>
+          {onReplayEntrance && <button className="hero-replay" onClick={onReplayEntrance}><RotateCcw size={12} aria-hidden="true" />Replay intro</button>}
         </div>
-
-        {/* Bottom Exploration Cue */}
-        <div className="flex items-center justify-between text-[11px] font-mono text-cyan-500/70 pointer-events-auto">
-          <div className="hidden sm:flex items-center gap-2 backdrop-blur-md bg-black/40 px-3 py-1.5 rounded-lg border border-cyan-900/40">
-            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-            <span>DRAG TO ROTATE 3D VIEW • CLICK SPATIAL BEACONS • SCROLL TO ZOOM</span>
-          </div>
-          <div className="flex items-center gap-1.5 text-cyan-400/80 font-mono text-[10px]">
-            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" />
-            <span>SPATIAL MATRIX STABLE</span>
-          </div>
-        </div>
+        <div className="core-caption" aria-hidden="true"><span className="caption-line" /><span>01 / NEURAL CORE</span><span className="caption-sub">An evolving digital identity</span></div>
+        <div className="hero-index" aria-hidden="true">ENGINEERING<br />WITH IMAGINATION</div>
       </div>
 
       {/* Persistent Holographic Introduction Overlay Card when "Meet Hector" is active */}
@@ -106,7 +42,7 @@ export function HeroOverlay({ onMeetHector, onCloseIntro, onExplore, isIntroPlay
           onClick={(e) => {
             if (e.target === e.currentTarget) onCloseIntro();
           }}
-          className="fixed inset-0 z-50 pointer-events-auto flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
+          role="dialog" aria-modal="true" aria-label="Meet Hector" className="intro-overlay fixed inset-0 z-50 pointer-events-auto flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
         >
           <div className="max-w-lg w-full bg-black/95 backdrop-blur-2xl border-2 border-cyan-400 rounded-2xl p-6 sm:p-8 shadow-[0_0_60px_rgba(0,240,255,0.6)] animate-slide-left text-left relative">
             {/* Top Header Bar with Telemetry on Left and Close Button on Right */}
@@ -114,7 +50,7 @@ export function HeroOverlay({ onMeetHector, onCloseIntro, onExplore, isIntroPlay
               {/* Telemetry Status on the Left Side */}
               <div className="flex items-center gap-2 text-cyan-300">
                 <Volume2 className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
-                <span className="tracking-widest font-bold text-[11px]">NEURAL IDENTITY: FOCAL LOCK</span>
+                <span className="tracking-widest font-bold text-[11px]">MEET HECTOR</span>
               </div>
 
               {/* Close Button on the Right Side */}
@@ -122,7 +58,7 @@ export function HeroOverlay({ onMeetHector, onCloseIntro, onExplore, isIntroPlay
                 onClick={onCloseIntro}
                 className="p-1.5 px-2.5 rounded-lg bg-cyan-950/60 border border-cyan-500/40 text-cyan-300 hover:text-white hover:bg-cyan-900/80 hover:border-cyan-400 transition-all font-mono text-xs inline-flex items-center gap-1.5"
                 title="Close Inspection (Esc)"
-                aria-label="Close avatar inspection"
+                aria-label="Close introduction"
               >
                 <span>ESC / CLOSE</span>
                 <X className="w-3.5 h-3.5 text-cyan-400" />
@@ -131,18 +67,20 @@ export function HeroOverlay({ onMeetHector, onCloseIntro, onExplore, isIntroPlay
 
             {/* Avatar Header & Welcome Greeting */}
             <div className="flex items-center gap-4 mb-4">
-              <div className="relative w-16 h-16 rounded-full border-2 border-cyan-400 overflow-hidden flex-shrink-0 shadow-[0_0_20px_rgba(0,240,255,0.5)]">
-                <img
+              <div className="intro-portrait relative w-16 h-16 rounded-full border-2 border-cyan-400 overflow-hidden flex-shrink-0 shadow-[0_0_20px_rgba(0,240,255,0.5)]">
+                {portraitAvailable ? <img
                   src={PERSONAL_INFO.avatarUrl}
                   alt={PERSONAL_INFO.name}
+                  width={64} height={64} decoding="async"
+                  onError={() => setPortraitAvailable(false)}
                   className="w-full h-full object-cover filter contrast-110"
-                />
+                /> : <span className="intro-monogram" aria-hidden="true">hm<span>.</span></span>}
                 <div className="absolute inset-0 bg-gradient-to-t from-cyan-950/60 via-transparent to-transparent" />
               </div>
 
               <div>
                 <div className="text-[11px] font-mono text-cyan-400 tracking-wider uppercase mb-0.5">
-                  DIGITAL AVATAR TWIN
+                  SOFTWARE ENGINEER
                 </div>
                 <h3 className="text-xl sm:text-2xl font-bold font-display text-white">
                   Hector Morales
@@ -174,7 +112,6 @@ export function HeroOverlay({ onMeetHector, onCloseIntro, onExplore, isIntroPlay
             <div className="flex items-center gap-3">
               <button
                 onClick={() => {
-                  onCloseIntro();
                   onExplore('projects');
                 }}
                 className="flex-1 py-2.5 rounded-xl bg-cyan-500 text-black font-mono text-xs font-bold hover:bg-cyan-400 transition-all shadow-[0_0_15px_rgba(0,240,255,0.4)] flex items-center justify-center gap-1.5"
@@ -185,7 +122,6 @@ export function HeroOverlay({ onMeetHector, onCloseIntro, onExplore, isIntroPlay
 
               <button
                 onClick={() => {
-                  onCloseIntro();
                   onExplore('about');
                 }}
                 className="flex-1 py-2.5 rounded-xl bg-black/60 border border-cyan-500/50 text-cyan-300 font-mono text-xs font-bold hover:border-cyan-400 hover:bg-cyan-950/40 transition-all flex items-center justify-center gap-1.5"

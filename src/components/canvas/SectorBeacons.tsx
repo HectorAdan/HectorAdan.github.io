@@ -1,145 +1,56 @@
-import { useRef, useState } from 'react';
+import { useMemo, useRef, type RefObject } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { SectorId } from '../../types/portfolio';
 import { SECTORS } from '../../data/portfolioData';
+import { SPATIAL_SECTORS, getBeaconPosition } from './SectorPaths';
 
 interface SectorBeaconsProps {
   activeSector: SectorId;
+  previewSector: SectorId | null;
+  onPreviewSector: (sector: SectorId | null) => void;
   onSelectSector: (sector: SectorId) => void;
   reducedMotion?: boolean;
+  portal: RefObject<HTMLDivElement | null>;
 }
-
-export function SectorBeacons({ activeSector, onSelectSector, reducedMotion = false }: SectorBeaconsProps) {
-  const sectorList = ['about', 'projects', 'experience', 'contact'] as SectorId[];
-
-  return (
-    <group>
-      {sectorList.map((secId) => (
-        <SingleBeacon
-          key={secId}
-          sectorId={secId}
-          isActive={activeSector === secId}
-          onSelect={() => onSelectSector(secId)}
-          reducedMotion={reducedMotion}
-        />
-      ))}
-    </group>
-  );
+export function SectorBeacons({ activeSector, previewSector, onPreviewSector, onSelectSector, reducedMotion = false, portal }: SectorBeaconsProps) {
+  return <group>{SPATIAL_SECTORS.map(id => <Beacon key={id} sectorId={id} active={activeSector === id} highlighted={previewSector === id} onPreview={onPreviewSector} onSelect={() => onSelectSector(id)} reducedMotion={reducedMotion} portal={portal} />)}</group>;
 }
-
-function SingleBeacon({
-  sectorId,
-  isActive,
-  onSelect,
-  reducedMotion,
-}: {
-  sectorId: SectorId;
-  isActive: boolean;
-  onSelect: () => void;
-  reducedMotion: boolean;
+function Beacon({ sectorId, active, highlighted, onPreview, onSelect, reducedMotion, portal }: {
+  sectorId: SectorId; active: boolean; highlighted: boolean;
+  onPreview: (sector: SectorId | null) => void; onSelect: () => void;
+  reducedMotion: boolean; portal: RefObject<HTMLDivElement | null>;
 }) {
   const config = SECTORS[sectorId];
-  const groupRef = useRef<THREE.Group>(null);
-  const coreRef = useRef<THREE.Mesh>(null);
-  const ringRef = useRef<THREE.Mesh>(null);
-  const [hovered, setHovered] = useState(false);
-
-  useFrame((state, delta) => {
-    if (reducedMotion) return;
-    const t = state.clock.elapsedTime;
-
-    if (coreRef.current) {
-      coreRef.current.rotation.y += delta * (isActive ? 1.5 : hovered ? 2.0 : 0.8);
-      coreRef.current.rotation.x = Math.sin(t * 1.5) * 0.2;
-    }
-
-    if (ringRef.current) {
-      ringRef.current.rotation.z -= delta * (isActive ? 1.8 : hovered ? 2.2 : 0.6);
-    }
-
-    if (groupRef.current) {
-      groupRef.current.position.y = config.position[1] + Math.sin(t * 1.2 + config.position[0]) * 0.15;
+  const basePosition = useMemo(() => getBeaconPosition(sectorId), [sectorId]);
+  const group = useRef<THREE.Group>(null);
+  const marker = useRef<THREE.Mesh>(null);
+  useFrame(({ clock }, delta) => {
+    if (group.current && !reducedMotion) group.current.position.y = basePosition.y + Math.sin(clock.elapsedTime * .3 + basePosition.x) * .035;
+    if (marker.current) {
+      const target = active || highlighted ? 1.8 : 1;
+      marker.current.scale.setScalar(reducedMotion ? target : THREE.MathUtils.damp(marker.current.scale.x, target, 7, Math.min(delta, .05)));
     }
   });
-
-  const baseColor = config.color;
-  const isSelectedOrHovered = isActive || hovered;
-
-  return (
-    <group
-      ref={groupRef}
-      position={config.position}
-      onClick={(e) => {
-        e.stopPropagation();
-        onSelect();
-      }}
-      onPointerOver={(e) => {
-        e.stopPropagation();
-        setHovered(true);
-        document.body.style.cursor = 'pointer';
-      }}
-      onPointerOut={() => {
-        setHovered(false);
-        document.body.style.cursor = 'default';
-      }}
-    >
-      {/* Central Spinning Crystal Octahedron */}
-      <mesh ref={coreRef} scale={isSelectedOrHovered ? 1.3 : 1.0}>
-        <octahedronGeometry args={[0.42, 0]} />
-        <meshStandardMaterial
-          color={baseColor}
-          emissive={baseColor}
-          emissiveIntensity={isSelectedOrHovered ? 3.0 : 1.4}
-          roughness={0.1}
-          metalness={0.9}
-        />
-      </mesh>
-
-      {/* Orbiting Telemetry Ring */}
-      <mesh ref={ringRef} rotation={[Math.PI / 2, 0, 0]}>
-        <torusGeometry args={[0.75, 0.015, 16, 48]} />
-        <meshStandardMaterial
-          color={config.accentColor}
-          emissive={config.accentColor}
-          emissiveIntensity={isSelectedOrHovered ? 2.5 : 1.0}
-        />
-      </mesh>
-
-      {/* Outer Pulse Corona */}
-      <mesh scale={isSelectedOrHovered ? 1.4 : 1.0}>
-        <sphereGeometry args={[0.85, 16, 16]} />
-        <meshBasicMaterial
-          color={baseColor}
-          transparent
-          opacity={isSelectedOrHovered ? 0.22 : 0.08}
-          blending={THREE.AdditiveBlending}
-          depthWrite={false}
-        />
-      </mesh>
-
-      {/* Interactive 3D Beacon Label */}
-      <Html
-        position={[0, -0.9, 0]}
-        center
-        distanceFactor={11}
-        className="pointer-events-none select-none"
-      >
-        <div
-          className={`flex flex-col items-center px-3 py-1.5 rounded border transition-all duration-300 font-mono text-xs backdrop-blur-md ${
-            isSelectedOrHovered
-              ? 'bg-cyan-950/80 border-cyan-400 text-cyan-200 shadow-[0_0_15px_rgba(0,240,255,0.4)] scale-105'
-              : 'bg-black/60 border-cyan-900/60 text-cyan-400/80 hover:border-cyan-500'
-          }`}
-        >
-          <div className="flex items-center gap-1.5 font-bold tracking-wider uppercase text-[11px]">
-            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-            {config.label}
-          </div>
-          <span className="text-[9px] text-cyan-500/70">{config.code}</span>
-        </div>
-      </Html>
-    </group>
-  );
+  return <group ref={group} position={basePosition}>
+    <mesh onClick={e => { e.stopPropagation(); onSelect(); }}
+      onPointerOver={e => { e.stopPropagation(); onPreview(sectorId); }} onPointerOut={() => onPreview(null)}>
+      <sphereGeometry args={[.34, 12, 8]} />
+      <meshBasicMaterial visible={false} />
+    </mesh>
+    <mesh ref={marker}>
+      <sphereGeometry args={[.04, 10, 8]} />
+      <meshBasicMaterial color={active || highlighted ? '#d5f4fa' : sectorId === 'experience' ? '#9c8cc7' : '#96d5df'} />
+    </mesh>
+    <Html portal={portal as RefObject<HTMLElement>} position={[0, -.24, 0]} center zIndexRange={[9, 0]}>
+      <button className={`spatial-label ${active ? 'is-active' : ''} ${highlighted ? 'is-preview' : ''}`} onClick={onSelect}
+        onPointerEnter={e => { if (e.pointerType === 'mouse') onPreview(sectorId); }}
+        onPointerLeave={e => { if (document.activeElement !== e.currentTarget) onPreview(null); }}
+        onFocus={() => onPreview(sectorId)} onBlur={() => onPreview(null)}
+        aria-label={`Open ${config.label} section`} aria-pressed={active}>
+        <span>{config.label}</span><span aria-hidden="true">↗</span>
+      </button>
+    </Html>
+  </group>;
 }

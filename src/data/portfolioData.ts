@@ -89,7 +89,7 @@ export const PROJECTS: ProjectItem[] = [
     company: 'WestonDEV',
     category: 'Mobile Engineering (Android)',
     year: '2022 - Present',
-    description: 'Enterprise point-of-sale mobile app for Android engineered to manage restaurants with multiple organizations, locations, dynamic menus, employees, tables, customers, payments, hardware settings, and analytical reports.',
+    description: 'Enterprise point-of-sale mobile app for Android engineered to manage restaurants with multiple organizations, locations, dynamic menus, employees, tables, customers, payments, hardware settings, and analytical reports. Built reservation workflows across Android, web, and handheld devices: create customers, assign tables on the table layout, seat customers, create orders, and track reservation statuses in real time.',
     tags: ['React Native', 'Redux', 'TypeScript', 'Reanimated', 'Gesture Handler', 'Android'],
     metrics: 'Created base architecture, Table Layout Editor & drag-and-drop',
     featured: true,
@@ -100,7 +100,7 @@ export const PROJECTS: ProjectItem[] = [
     company: 'WestonDEV',
     category: 'Enterprise Web Application',
     year: '2022 - Present',
-    description: 'Comprehensive administrative web platform for multi-location restaurant operations. Created base project, component design system, and drag-and-drop table layout configuration flows.',
+    description: 'Comprehensive administrative web platform for multi-location restaurant operations. Created base project, component design system, and drag-and-drop table layout configuration flows. Developed reservation management for customer creation, table assignment, seating, and order creation, with real-time reservation status tracking across web, Android, and handheld devices.',
     tags: ['React', 'Redux', 'TypeScript', 'DND', 'Interactive Layouts'],
     metrics: 'Full organization & branch governance',
     featured: true,
@@ -233,6 +233,7 @@ export const EXPERIENCES: ExperienceItem[] = [
     highlights: [
       'Engineered cross-platform POS mobile app for Android to manage restaurants with multi-organization support, table layout editor, menus, employees, payments, and reporting.',
       'Developed administrative web management platform for restaurants utilizing React, Redux, TypeScript, and Drag-and-Drop (DND) interfaces.',
+      'Built a reservation system across Android, web, and handheld devices, enabling customer creation, table assignment on the table layout, seating, and order creation with real-time reservation status tracking.',
       'Designed and deployed high-performance online ordering web application for seamless customer ordering and real-time checkout.',
       'Spearheaded complete UI/UX overhaul and feature expansion for a healthcare business management web application.',
       'Developed and designed a modern, responsive web application for a premier cruise company.',
@@ -241,12 +242,12 @@ export const EXPERIENCES: ExperienceItem[] = [
     projects: [
       {
         title: 'Restaurant POS Android Mobile App',
-        description: 'Multi-organization POS system with Table Layout Editor, Drag & Drop table mapping, employee and menu management, and payment processing.',
+        description: 'Multi-organization POS system with Table Layout Editor, Drag & Drop table mapping, employee and menu management, and payment processing. Reservation workflows support customer creation, table assignment, seating, and order creation on Android and handheld devices, with real-time reservation status tracking.',
         tech: ['React Native', 'Redux', 'TypeScript', 'Reanimated', 'Gesture Handler'],
       },
       {
         title: 'Restaurant Management Web Platform',
-        description: 'Multi-branch operational web suite with Drag-and-Drop table designer and multi-store administration.',
+        description: 'Multi-branch operational web suite with Drag-and-Drop table designer and multi-store administration. Includes reservation management from customer creation and table assignment through seating and order creation, with reservation statuses tracked in real time.',
         tech: ['React', 'Redux', 'TypeScript', 'DND'],
       },
       {
