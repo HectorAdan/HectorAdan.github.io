@@ -8,13 +8,14 @@ import * as THREE from 'three';
 
 // Validate the source-independent geometry boundary without a browser or test dependency.
 const temporary = await mkdtemp(join(tmpdir(), 'avatar-check-'));
-const files = ['avatarSurface', 'sampleAvatar', 'neuralGeometry'];
+const files = ['avatarSurface', 'sampleAvatar', 'neuralGeometry', 'morphChannels'];
 const urls = Object.fromEntries(files.map(name => [name, pathToFileURL(join(temporary, `${name}.mjs`)).href]));
 try {
   for (const name of files) {
     const sourcePath = name === 'neuralGeometry' ? 'src/components/canvas/neuralGeometry.ts' : `src/components/avatar/${name}.ts`;
     let source = await readFile(resolve(sourcePath), 'utf8');
     source = source.replace("'../canvas/neuralGeometry'", `'${urls.neuralGeometry}'`)
+      .replace("'./morphChannels'", `'${urls.morphChannels}'`)
       .replaceAll("'three'", `'${pathToFileURL(resolve('node_modules/three/build/three.module.js')).href}'`)
       .replace(/'three\/addons\/([^']+)'/g, (_, path) => `'${pathToFileURL(resolve('node_modules/three/examples/jsm', path)).href}'`);
     const compiled = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext } }).outputText;
@@ -66,6 +67,41 @@ try {
   assert.ok(prepared.boundingBox.getCenter(new THREE.Vector3()).length() < .00001);
   assert.throws(() => prepareAvatarSurface(new THREE.Group()), /no visible mesh/);
   prepared.dispose(); sphere.geometry.dispose(); box.geometry.dispose(); sphere.material.dispose(); box.material.dispose();
+
+  // A facial mask has no torso. Its lower features must not inherit the bust's
+  // sampling bias toward the upper half of the normalized model.
+  const { GLTFLoader } = await import('three/addons/loaders/GLTFLoader.js');
+  const model = await readFile('public/models/hector-mediapipe-poc.glb');
+  const gltf = await new GLTFLoader().parseAsync(model.buffer.slice(model.byteOffset, model.byteOffset + model.byteLength), '');
+  const facialSurface = prepareAvatarSurface(gltf.scene);
+  for (const compact of [false, true]) {
+    const facialSamples = sampleAvatar(facialSurface, compact, true);
+    allFinite(facialSamples.points); allFinite(facialSamples.pathways);
+    const p = facialSamples.points.getAttribute('position');
+    let lower = 0;
+    for (let i = 0; i < p.count; i++) if (p.getY(i) < 0) lower++;
+    assert.ok(lower / p.count > .4 && lower / p.count < .7, 'The facial mask must retain balanced coverage below the eyes');
+    assert.equal(facialSamples.particleCount, compact ? 2200 : 3800);
+    assert.ok(facialSamples.connectionCount > 0 && facialSamples.connectionCount <= (compact ? 1200 : 2200));
+    const anchors = facialSamples.points.getAttribute('aAnchor');
+    const linkedNodes = Array.from(anchors.array).filter(value => value === 1).length;
+    assert.ok(linkedNodes > p.count * .25 && linkedNodes <= p.count * .5, 'The face must have a visible network of linked nodes, with quieter unconnected samples');
+    const edges = facialSamples.pathways.getAttribute('position'), degrees = new Map();
+    const a = new THREE.Vector3(), b = new THREE.Vector3();
+    for (let i = 0; i < edges.count; i += 2) {
+      a.fromBufferAttribute(edges, i); b.fromBufferAttribute(edges, i + 1);
+      assert.ok(a.distanceTo(b) <= .23001, 'Neural face connections must remain local, including subdivided source contours');
+      for (const point of [a, b]) {
+        assert.ok(facialSurface.boundingBox.clone().expandByScalar(.00001).containsPoint(point), 'Connections must remain within facial model bounds');
+        const key = point.toArray().join(':'); degrees.set(key, (degrees.get(key) ?? 0) + 1);
+      }
+    }
+    assert.ok([...degrees.values()].every(degree => degree <= 3), 'The neural face must retain a bounded node degree');
+    facialSamples.dispose();
+  }
+  facialSurface.dispose();
+  gltf.scene.traverse(object => { if (object.isMesh) { object.geometry.dispose(); object.material.dispose(); } });
+  console.log('Facial mask: balanced upper/lower surface coverage within existing particle and edge budgets — valid');
 
   // Optional disposable self-contained GLB fixture for the browser loader smoke check.
   const fixtureArg = process.argv.indexOf('--fixture');

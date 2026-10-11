@@ -229,7 +229,7 @@ export const EXPERIENCES: ExperienceItem[] = [
     role: 'Senior FullStack Javascript Developer',
     company: 'WestonDEV',
     location: 'Miami, Florida, US (Remote)',
-    period: 'March 2022 — Present (3+ years)',
+    period: 'March 2022 — Present (4+ years)',
     highlights: [
       'Engineered cross-platform POS mobile app for Android to manage restaurants with multi-organization support, table layout editor, menus, employees, payments, and reporting.',
       'Developed administrative web management platform for restaurants utilizing React, Redux, TypeScript, and Drag-and-Drop (DND) interfaces.',

@@ -2,8 +2,16 @@ export type IdentityStatus = 'loading' | 'ready' | 'unavailable';
 export interface IdentityFrame { core: number; face: number; assembly: number }
 export interface IdentityPresentation { current: IdentityFrame }
 
+// Bounded local rotations keep the open facial surface mostly front-facing.
+export function identityLookTarget(pointerX: number, pointerY: number, centerX: number, centerY: number) {
+  return {
+    yaw: Math.max(-.22, Math.min(.22, (pointerX - centerX) * .20)),
+    pitch: Math.max(-.14, Math.min(.14, -(pointerY - centerY) * .12)),
+  };
+}
+
 // Seconds from activation. A staged handoff keeps the existing Core geometry intact.
-export const IDENTITY_TIMING = { coreFadeStart: .65, coreFadeEnd: 2.25, faceStart: 1.1, faceEnd: 2.8, assemblyEnd: 3.3 };
+export const IDENTITY_TIMING = { coreFadeStart: 1.0, coreFadeEnd: 3.1, faceStart: .8, faceEnd: 3.4, assemblyEnd: 4.6 };
 const smooth = (value: number, start: number, end: number) => {
   const t = Math.max(0, Math.min(1, (value - start) / (end - start)));
   return t * t * (3 - 2 * t);

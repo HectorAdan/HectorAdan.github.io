@@ -606,11 +606,10 @@ button:focus-visible, a:focus-visible {
 .identity-copy .identity-line-third { margin-top: 18px; color: #cfe6ed; }
 .identity-actions { margin-top: 32px; display: flex; flex-wrap: wrap; gap: 10px 22px; }
 .identity-actions .hero-secondary { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; font-size: 13px; }
-.identity-line { opacity: 0; }
-.identity-text[data-ready="true"] .identity-line { animation: identity-text-reveal .8s both; }
-.identity-text[data-ready="true"] .identity-line-first { animation-delay: 1.6s; }
-.identity-text[data-ready="true"] .identity-line-second { animation-delay: 2.1s; }
-.identity-text[data-ready="true"] .identity-line-third { animation-delay: 2.8s; }
+.identity-line { opacity: 1; }
+.identity-line-second, .identity-line-third { animation: identity-text-reveal .65s both; }
+.identity-line-second { animation-delay: .25s; }
+.identity-line-third { animation-delay: .6s; }
 .identity-loading { position: absolute; left: 7%; bottom: 8%; max-width: 360px; color: #96b3c0; font: 12px/1.7 var(--font-mono); }
 @keyframes identity-text-reveal { from { opacity: 0; transform: translateY(8px); filter: blur(3px); } to { opacity: 1; transform: translateY(0); filter: blur(0); } }
 .portfolio-shell[data-motion="reduced"] .identity-line { opacity: 1; animation: none; }

@@ -42,7 +42,7 @@ export function HeroOverlay({ onMeetHector, onCloseIntro, onExplore, isIntroPlay
         <button onClick={onCloseIntro} aria-label="Close introduction" title="Close introduction (Escape)"><span>Close</span><X size={18} aria-hidden="true" /></button>
       </header>
       <div className="identity-copy">
-        <div className="identity-text" key={introRun} data-ready={identityStatus !== 'loading'}>
+        <div className="identity-text" key={introRun}>
         <span className="identity-eyebrow">A DIGITAL INTRODUCTION</span>
         <h2 id="identity-greeting" className="identity-line identity-line-first">Hey, I'm Hector<span>.</span></h2>
         <p id="identity-description" className="identity-line identity-line-second">I'm a software engineer passionate about building intuitive digital experiences.</p>

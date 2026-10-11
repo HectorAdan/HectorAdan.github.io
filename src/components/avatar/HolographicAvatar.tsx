@@ -5,6 +5,7 @@ import { sampleAvatar } from './sampleAvatar';
 import { avatarLineFragment, avatarLineVertex, avatarPointFragment, avatarPointVertex, avatarShellFragment, avatarShellVertex } from './avatarShaders';
 import { glowFragment, glowVertex } from '../canvas/neuralGeometry';
 import type { IdentityPresentation } from '../../utils/identityIntroduction';
+import { MORPH_CHANNELS, type AvatarMorphPose } from './morphChannels';
 
 interface Props {
   surface: THREE.BufferGeometry;
@@ -16,18 +17,27 @@ interface Props {
   presentation?: IdentityPresentation;
   surfaceOpacity?: number;
   projector?: boolean;
+  emergingIdentity?: boolean;
+  morphPose?: AvatarMorphPose;
+  particles?: boolean;
 }
 
-export function HolographicAvatar({ surface, compact, paused, shell, pathways, onSampled, presentation, surfaceOpacity = 1, projector = true }: Props) {
+export function HolographicAvatar({ surface, compact, paused, shell, pathways, onSampled, presentation, surfaceOpacity = 1, projector = true, emergingIdentity = false, morphPose, particles = true }: Props) {
   const { gl } = useThree();
-  const samples = useMemo(() => sampleAvatar(surface, compact), [surface, compact]);
+  const samples = useMemo(() => sampleAvatar(surface, compact, emergingIdentity), [surface, compact, emergingIdentity]);
   const pointMaterial = useRef<THREE.ShaderMaterial>(null);
   const shellMaterial = useRef<THREE.ShaderMaterial>(null);
   const lineMaterial = useRef<THREE.ShaderMaterial>(null);
   const time = useRef(0);
-  const pointUniforms = useMemo(() => ({ uTime: { value: 0 }, uPixelRatio: { value: gl.getPixelRatio() }, uReveal: { value: presentation ? 0 : 1 }, uAssembly: { value: 0 }, uIntensity: { value: presentation ? compact ? 1.55 : 1.15 : 1 } }), [gl, presentation, compact]);
-  const shellUniforms = useMemo(() => ({ uTime: { value: 0 }, uReveal: { value: presentation ? 0 : 1 }, uSurfaceOpacity: { value: surfaceOpacity } }), [presentation, surfaceOpacity]);
-  const lineUniforms = useMemo(() => ({ uTime: { value: 0 }, uMotion: { value: 1 }, uReveal: { value: presentation ? 0 : 1 }, uOpacity: { value: .09 }, uColor: { value: new THREE.Color('#43849e') } }), [presentation]);
+  const defines = useMemo(() => morphPose ? { AVATAR_MORPHS: 1 } : {}, [morphPose]);
+  const styleUniforms = useMemo(() => {
+    surface.computeBoundingBox();
+    const size = surface.boundingBox!.getSize(new THREE.Vector3());
+    return { uEmergence: { value: emergingIdentity ? 1 : 0 }, uFaceExtent: { value: new THREE.Vector2(size.x * .5, size.y * .5) }, uMorphWeights: { value: new Float32Array(MORPH_CHANNELS.length) } };
+  }, [surface, emergingIdentity]);
+  const pointUniforms = useMemo(() => ({ ...styleUniforms, uTime: { value: 0 }, uPixelRatio: { value: gl.getPixelRatio() }, uReveal: { value: presentation ? 0 : 1 }, uAssembly: { value: 0 }, uIntensity: { value: presentation ? compact ? 1.7 : 1.3 : 1 } }), [gl, presentation, compact, styleUniforms]);
+  const shellUniforms = useMemo(() => ({ ...styleUniforms, uTime: { value: 0 }, uReveal: { value: presentation ? 0 : 1 }, uSurfaceOpacity: { value: surfaceOpacity } }), [presentation, surfaceOpacity, styleUniforms]);
+  const lineUniforms = useMemo(() => ({ ...styleUniforms, uTime: { value: 0 }, uMotion: { value: 1 }, uReveal: { value: presentation ? 0 : 1 }, uOpacity: { value: emergingIdentity ? .5 : .09 }, uColor: { value: new THREE.Color(emergingIdentity ? '#65b7cd' : '#43849e') } }), [presentation, emergingIdentity, styleUniforms]);
   const glowUniforms = useMemo(() => ({ uColor: { value: new THREE.Color('#164365') }, uOpacity: { value: .3 } }), []);
   useEffect(() => {
     onSampled?.(samples.particleCount, samples.connectionCount);
@@ -46,6 +56,10 @@ export function HolographicAvatar({ surface, compact, paused, shell, pathways, o
     shellUniforms.uReveal.value = reveal * (1 - assembly);
     lineUniforms.uReveal.value = reveal * THREE.MathUtils.smoothstep(1 - assembly, .5, 1);
     lineUniforms.uMotion.value = paused ? 0 : 1;
+    if (morphPose) for (const material of [pointMaterial.current, shellMaterial.current, lineMaterial.current]) {
+      if (!material) continue;
+      MORPH_CHANNELS.forEach((channel, i) => { material.uniforms.uMorphWeights.value[i] = THREE.MathUtils.clamp(morphPose?.current[channel.name] ?? 0, 0, 1); });
+    }
     // Update the mounted materials; R3F can replace uniform containers on reconciliation.
     if (pointMaterial.current) {
       pointMaterial.current.uniforms.uTime.value = time.current;
@@ -68,17 +82,17 @@ export function HolographicAvatar({ surface, compact, paused, shell, pathways, o
     {/* The source surface is owned by the loader, not by R3F's auto-disposal. */}
     {shell && <mesh renderOrder={0}>
       <primitive object={surface} attach="geometry" />
-      <shaderMaterial ref={shellMaterial} vertexShader={avatarShellVertex} fragmentShader={avatarShellFragment} uniforms={shellUniforms}
+      <shaderMaterial ref={shellMaterial} defines={defines} vertexShader={avatarShellVertex} fragmentShader={avatarShellFragment} uniforms={shellUniforms}
         transparent depthWrite={false} side={THREE.FrontSide} />
     </mesh>}
-    <points renderOrder={2}>
+    {particles && <points renderOrder={2}>
       <primitive object={samples.points} attach="geometry" />
-      <shaderMaterial ref={pointMaterial} vertexShader={avatarPointVertex} fragmentShader={avatarPointFragment} uniforms={pointUniforms}
+      <shaderMaterial ref={pointMaterial} defines={defines} vertexShader={avatarPointVertex} fragmentShader={avatarPointFragment} uniforms={pointUniforms}
         transparent vertexColors depthWrite={false} blending={THREE.AdditiveBlending} />
-    </points>
+    </points>}
     {pathways && <lineSegments renderOrder={1}>
       <primitive object={samples.pathways} attach="geometry" />
-      <shaderMaterial ref={lineMaterial} vertexShader={avatarLineVertex} fragmentShader={avatarLineFragment} uniforms={lineUniforms}
+      <shaderMaterial ref={lineMaterial} defines={defines} vertexShader={avatarLineVertex} fragmentShader={avatarLineFragment} uniforms={lineUniforms}
         transparent depthWrite={false} blending={THREE.AdditiveBlending} />
     </lineSegments>}
     {projector && <><mesh position={[0, -1.94, 0]} rotation={[-Math.PI / 2, 0, 0]}>

@@ -118,7 +118,7 @@ export function prepareAvatarSurface(root: THREE.Object3D): THREE.BufferGeometry
   return surface;
 }
 
-function disposeSource(root: THREE.Object3D) {
+export function disposeSource(root: THREE.Object3D) {
   const geometries = new Set<THREE.BufferGeometry>(), materials = new Set<THREE.Material>(), textures = new Set<THREE.Texture>();
   root.traverse(object => {
     if (!(object instanceof THREE.Mesh)) return;
