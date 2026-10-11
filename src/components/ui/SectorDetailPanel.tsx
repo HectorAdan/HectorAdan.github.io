@@ -23,17 +23,12 @@ export function SectorDetailPanel({ activeSector, onClose, onSelectSector }: Sec
   const [copied, setCopied] = useState(false);
   const [copyError, setCopyError] = useState(false);
   const [contactMessage, setContactMessage] = useState('');
-  const [isTransmitting, setIsTransmitting] = useState(false);
-  const [transmitted, setTransmitted] = useState(false);
+  const [draftFeedback, setDraftFeedback] = useState<'opened' | 'copied' | 'copy-error' | null>(null);
   const [projectFilter, setProjectFilter] = useState('ALL');
   const copyTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const dispatchTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const resetTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => () => {
     clearTimeout(copyTimer.current);
-    clearTimeout(dispatchTimer.current);
-    clearTimeout(resetTimer.current);
   }, []);
 
   const handleCopyEmail = async () => {
@@ -49,19 +44,16 @@ export function SectorDetailPanel({ activeSector, onClose, onSelectSector }: Sec
     copyTimer.current = setTimeout(() => { setCopied(false); setCopyError(false); }, 2200);
   };
 
-  // Preserve the original prototype interaction and clearly identify it as a demo.
-  const handleSendMessage = (event: React.FormEvent) => {
-    event.preventDefault();
-    if (!contactMessage.trim() || isTransmitting || transmitted) return;
-    setIsTransmitting(true);
-    dispatchTimer.current = setTimeout(() => {
-      setIsTransmitting(false);
-      setTransmitted(true);
-      resetTimer.current = setTimeout(() => {
-        setTransmitted(false);
-        setContactMessage('');
-      }, 4000);
-    }, 1200);
+  const message = contactMessage.trim();
+  const emailDraft = `mailto:${PERSONAL_INFO.email}?subject=${encodeURIComponent('A conversation from your portfolio')}&body=${encodeURIComponent(message.replace(/\r\n|\r|\n/g, '\r\n'))}`;
+  const handleCopyMessage = async () => {
+    if (!message) return;
+    try {
+      await navigator.clipboard.writeText(message);
+      setDraftFeedback('copied');
+    } catch {
+      setDraftFeedback('copy-error');
+    }
   };
 
   if (activeSector === 'home') return null;
@@ -160,15 +152,20 @@ export function SectorDetailPanel({ activeSector, onClose, onSelectSector }: Sec
             <span className="contact-copy-status" role="status">{copied ? 'Email address copied.' : copyError ? 'Unable to copy. Select the address or use the email link.' : ''}</span>
           </div>
 
-          <form onSubmit={handleSendMessage} className="panel-contact-form">
-            <div className="contact-form-heading"><label htmlFor="contact-message">Start a conversation</label><span className="panel-meta">Demo</span></div>
-            <p id="contact-demo-note">This form previews the interaction. To reach me, use the email or LinkedIn link above.</p>
-            <textarea id="contact-message" aria-describedby="contact-demo-note" value={contactMessage} onChange={event => setContactMessage(event.target.value)} placeholder="Your project idea, question, or invitation…" rows={4} />
-            <button type="submit" disabled={isTransmitting || transmitted || !contactMessage.trim()} className="panel-submit">
-              {isTransmitting ? 'Previewing…' : transmitted ? 'Preview complete' : 'Preview message'}<ArrowUpRight size={17} aria-hidden="true" />
-            </button>
-            <span className="contact-form-status" role="status">{transmitted ? 'Demo complete. No message was sent.' : ''}</span>
-          </form>
+          <div className="panel-contact-form" role="group" aria-labelledby="contact-compose-title">
+            <div className="contact-form-heading"><label id="contact-compose-title" htmlFor="contact-message">Start a conversation</label><span className="panel-meta">Email draft</span></div>
+            <p id="contact-compose-note">Write a message, then open it in your email app. You review and send it there.</p>
+            <textarea id="contact-message" aria-describedby="contact-compose-note" value={contactMessage} onChange={event => { setContactMessage(event.target.value); setDraftFeedback(null); }} placeholder="Your project idea, question, or invitation…" rows={4} />
+            <div className="contact-compose-actions">
+              <a href={message ? emailDraft : undefined} aria-disabled={!message} tabIndex={message ? 0 : -1} className="panel-submit"
+                onClick={event => { if (!message) { event.preventDefault(); return; } setDraftFeedback('opened'); }}>
+                Open email draft<ArrowUpRight size={17} aria-hidden="true" />
+              </a>
+              <button type="button" disabled={!message} onClick={handleCopyMessage} className="contact-message-copy"><Copy size={16} aria-hidden="true" />Copy message</button>
+            </div>
+            <p className="contact-compose-fallback">No email app set up? Copy your message and email <a href={`mailto:${PERSONAL_INFO.email}`}>{PERSONAL_INFO.email}</a>.</p>
+            <span className="contact-form-status" role="status">{draftFeedback === 'opened' ? 'Your email app should open with a draft. Review it and send it there. If nothing opens, use Copy message.' : draftFeedback === 'copied' ? 'Message copied. Paste it into an email to Hector.' : draftFeedback === 'copy-error' ? 'Unable to copy. Select the message above and copy it manually.' : ''}</span>
+          </div>
         </div>}
       </div>
 

@@ -106,6 +106,13 @@
 .panel-submit { margin-top: 14px; min-height: 46px; padding: 12px 18px; gap: 30px; color: #12232d; background: #b3d3dc; border-radius: 4px; font-size: 14px; font-weight: 500; }
 .panel-submit:hover:enabled { background: #d1e7ed; }
 .panel-submit:disabled { opacity: .45; cursor: default; }
+.contact-compose-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-top: 14px; }
+.contact-compose-actions .panel-submit { display: inline-flex; align-items: center; justify-content: center; gap: 12px; margin-top: 0; text-decoration: none; }
+.contact-compose-actions .panel-submit:hover:not([aria-disabled="true"]) { background: #d1e7ed; }
+.contact-compose-actions .panel-submit[aria-disabled="true"] { opacity: .45; cursor: default; }
+.contact-message-copy { min-height: 46px; padding: 10px 12px; gap: 8px; color: var(--panel-accent); font-size: 13px; }
+.contact-message-copy:disabled { opacity: .45; cursor: default; }
+.contact-compose-fallback a { color: var(--panel-accent); text-decoration: underline; text-underline-offset: 3px; overflow-wrap: anywhere; }
 .contact-form-status { display: block; margin-top: 12px; font-size: 13px; color: var(--panel-accent); }
 .contact-form-status:empty { display: none; }
 .panel-footer { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 16px 40px max(16px, env(safe-area-inset-bottom)); border-top: 1px solid var(--panel-rule); background: #070d16; flex-shrink: 0; }

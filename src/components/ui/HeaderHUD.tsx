@@ -24,7 +24,7 @@ export function HeaderHUD({ activeSector, onSelectSector, isMuted, onToggleMute,
   return <header className="interface-header">
     <button className="interface-brand" onClick={() => onSelectSector('home')} aria-label="Return to central neural core">
       <span className="brand-symbol" aria-hidden="true">h<span>.</span></span>
-      <span className="brand-wordmark">HECTOR MORALES<span>INDEPENDENT DEVELOPER</span></span>
+      <span className="brand-wordmark">HECTOR MORALES<span>SOFTWARE ENGINEER</span></span>
     </button>
     <nav className="interface-nav" aria-label="Portfolio navigation">
       {navigation.map(({ id, label }, index) => <button key={id} aria-keyshortcuts={String(index)} className={previewSector === id ? 'is-preview' : undefined}
