@@ -13,6 +13,22 @@ export interface ProjectStory {
 // Keep outcomes in the original project records; do not invent metrics or decisions.
 export const PROJECT_STORIES: ProjectStory[] = [
   {
+    projectId: 'simfinanzas',
+    title: 'SimFinanzas',
+    discipline: 'Personal finance & data visualization',
+    focus: 'Financial simulators, visual comparisons & personal planning',
+    platform: 'Web / Mexican financial context',
+    challenge: 'Mortgage payments, salary deductions, and housing decisions involve many variables that are difficult to compare in isolation. SimFinanzas brings educational scenario tools and personal income and expense planning into one Spanish-language platform, helping users explore assumptions and understand their finances through clear visual results.',
+    contributions: [
+      'Built the web application with React and TypeScript, using Redux Toolkit for application state.',
+      'Developed mortgage and ISR salary calculators, including extra payments, Infonavit contributions, salary deductions, and amortization tables.',
+      'Implemented prepayment-versus-investment and buying-versus-renting comparisons with charts showing how simulated outcomes change over time.',
+      'Created an income and expense planner with one-time and recurring movements, expense priorities, filtered lists, a payment calendar, and monthly or yearly dashboards.',
+      'Integrated Clerk authentication and Turso Cloud database storage for user data.',
+    ],
+    engineeringFocus: 'The application connects configurable financial scenarios with charts and detailed breakdowns, while the account-based planner presents the same income and expense records through list, calendar, and dashboard views. React and TypeScript support the interface, Redux Toolkit manages application state, Clerk handles authentication, and Turso Cloud provides database storage. Calculator results are educational estimates based on stated assumptions.',
+  },
+  {
     projectId: 'restaurant-pos-mobile',
     title: 'Restaurant POS',
     discipline: 'Application architecture',

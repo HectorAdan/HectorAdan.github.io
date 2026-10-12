@@ -9,6 +9,7 @@ import './ProjectGallery.css';
 
 const filters = [
   { label: 'All work', id: 'ALL' },
+  { label: 'Personal projects', id: 'Personal project' },
   { label: 'WestonDEV', id: 'WestonDEV' },
   { label: 'Kioscomático', id: 'Kioscomático' },
   { label: 'Colima Impulsa', id: 'Colima Impulsa' },
@@ -23,6 +24,14 @@ interface ProjectGalleryProps {
   projectFilter: string;
   onFilterChange: (filter: string) => void;
   onSelectSector: (sector: SectorId) => void;
+}
+
+function ProjectWebsiteLink({ project }: { project: ProjectItem }) {
+  if (!project.liveUrl) return null;
+  return <a className="project-read-story project-live-link" href={project.liveUrl} target="_blank" rel="noopener noreferrer"
+    aria-label={`Visit ${project.title} (opens in a new tab)`}>
+    Visit website<ArrowUpRight size={15} aria-hidden="true" />
+  </a>;
 }
 
 function CaseStudy({ story, project, onBack, onReadStory, onContact, titleRef }: {
@@ -40,6 +49,7 @@ function CaseStudy({ story, project, onBack, onReadStory, onContact, titleRef }:
       <h3 id={`story-title-${project.id}`} ref={titleRef} tabIndex={-1}>{story.title}<span>.</span></h3>
       <p className="story-project-name">{project.title}</p>
       <div className="story-byline"><span>{project.company}</span><span>{project.year}</span></div>
+      <ProjectWebsiteLink project={project} />
     </header>
     <dl className="story-facts">
       <div><dt>My focus</dt><dd>{story.focus}</dd></div>
@@ -85,7 +95,7 @@ export function ProjectGallery({ projectFilter, onFilterChange, onSelectSector }
   const selected = stories.find(item => item.project.id === selectedId);
   const filteredProjects = PROJECTS.filter(project => {
     if (projectFilter === 'ALL') return true;
-    if (projectFilter === 'Research') return !['WestonDEV', 'Kioscomático', 'Colima Impulsa'].includes(project.company ?? '');
+    if (projectFilter === 'Research') return !['Personal project', 'WestonDEV', 'Kioscomático', 'Colima Impulsa'].includes(project.company ?? '');
     return project.company === projectFilter;
   });
 
@@ -120,7 +130,7 @@ export function ProjectGallery({ projectFilter, onFilterChange, onSelectSector }
       </section>
 
       <div className="panel-project-controls">
-        <div className="panel-filters" role="group" aria-label="Filter projects by company">
+        <div className="panel-filters" role="group" aria-label="Filter projects">
           {filters.map(filter => <button key={filter.id} onClick={() => { if (filter.id !== projectFilter) soundManager.playNeuralClick(); onFilterChange(filter.id); }} aria-pressed={projectFilter === filter.id}>{filter.label}</button>)}
         </div>
         <p className="panel-result-count" role="status">{String(filteredProjects.length).padStart(2, '0')} projects <span>/ Applications & engineering solutions</span></p>
@@ -134,6 +144,7 @@ export function ProjectGallery({ projectFilter, onFilterChange, onSelectSector }
         <TechnologyTags items={project.tags} />
         <div className="project-card-footer">
           {project.featured && <span className="project-featured">Featured work</span>}
+          <ProjectWebsiteLink project={project} />
           {stories.some(item => item.project.id === project.id) && <button id={`story-card-${project.id}`} onClick={event => openStory(project.id, event.currentTarget.id)} className="project-read-story" aria-label={`Read case study for ${project.title}`}>Read case study<ArrowUpRight size={15} aria-hidden="true" /></button>}
         </div>
       </article>)}</div>

@@ -82,6 +82,18 @@ export const SKILL_CATEGORIES: SkillCategory[] = [
 ];
 
 export const PROJECTS: ProjectItem[] = [
+  // --- Personal Projects ---
+  {
+    id: 'simfinanzas',
+    title: 'SimFinanzas — Financial Simulation & Planning',
+    company: 'Personal project',
+    category: 'FinTech & Data Visualization',
+    year: 'Live',
+    description: 'A Spanish-language financial simulation and planning platform for Mexico. Combines mortgage and ISR salary calculators with prepayment-versus-investment and buying-versus-renting comparisons, interactive charts, and amortization tables. Includes an account-based income and expense planner with recurring movements, expense priorities, a payment calendar, and monthly or yearly dashboards.',
+    tags: ['React', 'TypeScript', 'Redux Toolkit', 'Clerk', 'Turso Cloud'],
+    liveUrl: 'https://www.simfinanzas.com/',
+    featured: true,
+  },
   // --- WestonDEV Projects ---
   {
     id: 'restaurant-pos-mobile',

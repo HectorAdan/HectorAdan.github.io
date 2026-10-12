@@ -15,6 +15,8 @@
 .project-card-footer .project-featured { margin-top: 0; }
 .project-read-story { gap: 9px; min-height: 44px; font-size: 13px; color: #bad7e0; border-bottom: 1px solid #a6cfd83b; }
 .project-read-story:hover { color: #ecf6f9; border-bottom-color: #a6cfd88c; }
+.project-live-link { display: inline-flex; align-items: center; text-decoration: none; }
+.story-header .project-live-link { margin-top: 12px; }
 .story-back { font-size: 13px; color: #a4bdcd; gap: 10px; min-height: 44px; padding-right: 12px; }
 .story-back:hover { color: #e3f0f4; }
 .story-header { margin-top: 26px; }
