@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { seededRandom, neuralGraph, corePointVertex, neuralPointFragment, neuralLineVertex, neuralLineFragment, glowVertex, glowFragment } from './neuralGeometry';
 import type { EntrancePhase } from '../../utils/entrance';
 import { soundManager } from '../../utils/soundEffects';
-import type { IdentityPresentation } from '../../utils/identityIntroduction';
+import { identityCoreLayout, type IdentityPresentation } from '../../utils/identityIntroduction';
 
 // Keep the existing public component and appearance controls; Phase 1 renders a core, not an avatar.
 export type AvatarRenderMode = 'hologram' | 'silhouette' | 'matrix';
@@ -55,7 +55,7 @@ export function HoloAvatar({ isIntroPlaying = false, onAvatarClick, reducedMotio
     });
     return { positions: new Float32Array(vertices.flatMap(p => p.toArray())), colors: new Float32Array(colors), graph: neuralGraph(vertices, 3, .56) };
   }, [compact]);
-  const pointUniforms = useMemo(() => ({ uReveal: { value: 1 }, uTime: { value: 0 }, uMotion: { value: 0 }, uSize: { value: compact ? 3.8 : 3.6 }, uPixelRatio: { value: gl.getPixelRatio() } }), [compact, gl]);
+  const pointUniforms = useMemo(() => ({ uReveal: { value: 1 }, uPresence: { value: 1 }, uTime: { value: 0 }, uMotion: { value: 0 }, uSize: { value: compact ? 3.8 : 3.6 }, uPixelRatio: { value: gl.getPixelRatio() } }), [compact, gl]);
   const lineUniforms = useMemo(() => ({ uTime: { value: 0 }, uMotion: { value: 0 }, uOpacity: { value: .22 }, uColor: { value: new THREE.Color('#508ba5') } }), []);
   const glowUniforms = useMemo(() => ({ uColor: { value: new THREE.Color('#428fc0') }, uOpacity: { value: .22 } }), []);
   const heartUniforms = useMemo(() => ({ uColor: { value: new THREE.Color('#a1e9ff') }, uOpacity: { value: .7 } }), []);
@@ -65,27 +65,36 @@ export function HoloAvatar({ isIntroPlaying = false, onAvatarClick, reducedMotio
     if (entrancePhase === 'playing') entranceElapsed.current += Math.min(delta, .05);
     const progress = reducedMotion || entrancePhase === 'done' ? 1 : entrancePhase === 'waiting' ? 0 : Math.min(1, entranceElapsed.current / 1.9);
     const presence = presentation?.current.core ?? 1;
-    if (root.current) root.current.visible = presence > .001;
-    const reveal = THREE.MathUtils.smoothstep(progress, 0, 1) * presence;
+    const merge = presentation?.current.merge ?? 0;
+    const layout = identityCoreLayout(merge, portrait);
+    if (root.current) {
+      root.current.visible = presence > .001;
+      root.current.position.set(portrait ? 0 : 1.15, (portrait ? 1.5 : .25) + layout.y + (reducedMotion ? 0 : Math.sin(time.current * .35) * .025 * merge), layout.z);
+      // Expand and remain around the whole face, rather than sinking below it.
+      root.current.scale.setScalar(layout.scale);
+    }
+    const reveal = THREE.MathUtils.smoothstep(progress, 0, 1);
     pointUniforms.uReveal.value = reveal;
-    heartUniforms.uOpacity.value = (.12 + reveal * .58) * presence;
+    pointUniforms.uPresence.value = presence;
+    heartUniforms.uOpacity.value = (.12 + reveal * .58) * presence * (1 - merge * .7);
     if (!reducedMotion) {
       time.current += Math.min(delta, .05);
       group.current.rotation.y = time.current * .045;
       group.current.rotation.z = Math.sin(time.current * .11) * .045;
-      group.current.scale.setScalar((portrait ? .92 : 1) * (1 + Math.sin(time.current * .65) * .012));
     }
+    group.current.scale.setScalar((portrait ? .92 : 1) * (1 + (reducedMotion ? 0 : Math.sin(time.current * .65) * .012)));
     points.current.uniforms.uTime.value = lines.current.uniforms.uTime.value = time.current;
     points.current.uniforms.uMotion.value = reducedMotion ? 0 : 1;
-    lines.current.uniforms.uMotion.value = reducedMotion ? 0 : reveal;
+    lines.current.uniforms.uMotion.value = reducedMotion ? 0 : reveal * presence;
     points.current.uniforms.uPixelRatio.value = gl.getPixelRatio();
-    lines.current.uniforms.uOpacity.value = (avatarMode === 'silhouette' ? .06 : avatarMode === 'matrix' ? .3 : .22) * THREE.MathUtils.smoothstep(reveal, .2, 1);
+    lines.current.uniforms.uOpacity.value = (avatarMode === 'silhouette' ? .06 : avatarMode === 'matrix' ? .3 : .22) * THREE.MathUtils.smoothstep(reveal, .2, 1) * presence;
     const lit = hovered.current || isIntroPlaying || engaged;
-    const opacity = (lit ? .33 : .22) * reveal;
+    const opacity = (lit ? .33 : .22) * reveal * presence * (1 - merge * .45);
     glowUniforms.uOpacity.value = reducedMotion ? opacity : THREE.MathUtils.damp(glowUniforms.uOpacity.value, opacity, 5, Math.min(delta, .05));
     const pointSize = (compact ? 3.8 : 3.6) + (lit ? .45 : 0);
     pointUniforms.uSize.value = reducedMotion ? pointSize : THREE.MathUtils.damp(pointUniforms.uSize.value, pointSize, 5, Math.min(delta, .05));
     points.current.uniforms.uReveal.value = reveal;
+    points.current.uniforms.uPresence.value = presence;
     points.current.uniforms.uSize.value = pointUniforms.uSize.value;
     points.current.uniforms.uPixelRatio.value = gl.getPixelRatio();
     lines.current.uniforms.uOpacity.value = lineUniforms.uOpacity.value;

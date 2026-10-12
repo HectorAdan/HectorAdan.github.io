@@ -45,12 +45,12 @@ const displacement = `
 function pointVertex(assemble: boolean) { return `
   ${displacement}
   uniform float uSize;
-  ${assemble ? 'uniform float uReveal;' : ''}
+  ${assemble ? 'uniform float uReveal; uniform float uPresence;' : ''}
   uniform float uPixelRatio;
   varying vec3 vColor;
   varying float vDepth;
   void main() {
-    vColor = color ${assemble ? '* uReveal' : ''};
+    vColor = color ${assemble ? '* uReveal * uPresence' : ''};
     vec4 mv = modelViewMatrix * vec4(organic(position) ${assemble ? '* mix(1.45, 1.0, uReveal)' : ''}, 1.0);
     vDepth = -mv.z;
     gl_Position = projectionMatrix * mv;

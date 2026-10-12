@@ -1,5 +1,5 @@
-import { neuralLineFragment } from '../canvas/neuralGeometry';
-import { avatarMorphGLSL } from './morphChannels';
+import { neuralLineFragment } from "../canvas/neuralGeometry";
+import { avatarMorphGLSL } from "./morphChannels";
 
 // Styling in normalized surface coordinates, never a deformation of facial anatomy.
 // Disabled in the isolated study; a future neutral GLB can use the same renderer.
@@ -29,6 +29,9 @@ export const avatarPointVertex = `
   uniform float uTime;
   uniform float uPixelRatio;
   uniform float uAssembly;
+  uniform float uCoreAssembly;
+  uniform vec3 uCoreOrigin;
+  uniform float uCoreRadius;
   uniform float uIntensity;
   uniform float uPortrait;
   attribute float aSeed;
@@ -54,6 +57,9 @@ export const avatarPointVertex = `
     float delay = (1.0 - feature) * .30 + aSeed * .12;
     float localAssembly = 1.0 - smoothstep(delay, .62 + delay, 1.0 - uAssembly);
     cloud *= mix(1.0, .55, uEmergence);
+    // Portfolio particles lift out of the same spherical volume as the Core.
+    // The isolated studies keep their original assembly cloud.
+    cloud = mix(cloud, uCoreOrigin + normalize(cloud) * uCoreRadius, uCoreAssembly);
     vec3 assembled = mix(facialPosition, cloud, mix(uAssembly, localAssembly, uEmergence));
     float fringe = uEmergence * (1.0 - smoothstep(.12, .5, vReconstruction)) * (1.0 - uAssembly);
     assembled += vec3(sin(angle + uTime * .18), cos(angle * .7 + uTime * .12), sin(angle)) * fringe * .045;
@@ -139,9 +145,12 @@ export const avatarShellFragment = `
     #include <colorspace_fragment>
   }
 `;
-// A neutral clay surface uses the same morph vertex shader as the hologram.
+// A translucent surface shares the Core palette and the hologram's morph shader.
 export const avatarSolidFragment = `
   uniform float uReveal;
+  uniform vec3 uSolidBlue;
+  uniform vec3 uSolidCyan;
+  uniform vec3 uSolidViolet;
   varying vec3 vNormal;
   varying vec3 vView;
   void main() {
@@ -153,9 +162,12 @@ export const avatarSolidFragment = `
     float fill = max(0.0, dot(n, normalize(vec3(.6, .15, .8))));
     float specular = pow(max(0.0, dot(n, normalize(key + view))), 40.0);
     float rim = pow(1.0 - max(0.0, dot(n, view)), 3.0);
-    vec3 color = vec3(.32, .38, .43) * (.34 + diffuse * .62 + fill * .25);
-    color += specular * vec3(.12, .15, .18) + rim * vec3(.025, .075, .09);
-    gl_FragColor = vec4(color, uReveal);
+    vec3 tint = mix(uSolidBlue, uSolidCyan, .18 + diffuse * .5);
+    tint = mix(tint, uSolidViolet, max(0.0, -n.x) * .10);
+    vec3 color = tint * (.45 + diffuse * .55 + fill * .18);
+    color += specular * uSolidCyan * .20 + rim * uSolidCyan * .14;
+    float opacity = .3 + diffuse * .12 + rim * .10;
+    gl_FragColor = vec4(color, uReveal * opacity);
     #include <tonemapping_fragment>
     #include <colorspace_fragment>
   }
@@ -184,5 +196,11 @@ export const avatarLineVertex = `
 
 // Reuse the existing electrical pulse shader, fading the entire pathway including pulses.
 export const avatarLineFragment = neuralLineFragment
-  .replace('uniform float uTime;', 'uniform float uTime;\n  uniform float uReveal;\n  uniform float uContours;\n  varying float vStructure;\n  varying float vContour;')
-  .replace('(uOpacity + energy * .65) * fog', '(uOpacity + energy * .65) * fog * uReveal * vStructure * vStructure * mix(1.0, uContours, vContour)');
+  .replace(
+    "uniform float uTime;",
+    "uniform float uTime;\n  uniform float uReveal;\n  uniform float uContours;\n  varying float vStructure;\n  varying float vContour;",
+  )
+  .replace(
+    "(uOpacity + energy * .65) * fog",
+    "(uOpacity + energy * .65) * fog * uReveal * vStructure * vStructure * mix(1.0, uContours, vContour)",
+  );

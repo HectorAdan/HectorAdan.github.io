@@ -49,8 +49,8 @@ export function FaceSettings({ style, onSelectStyle, contoursVisible, onToggleCo
 
   return <div className="face-settings" ref={root}>
     <div className="face-settings-desktop" role="group" aria-label="Face appearance controls">
-      <FaceStyleButton style={style} onClick={() => onSelectStyle(nextFaceStyle(style))} showLabel />
       {style !== 'solid' && <ContourButton visible={contoursVisible} onToggle={onToggleContours} />}
+      <FaceStyleButton style={style} onClick={() => onSelectStyle(nextFaceStyle(style))} showLabel />
     </div>
     <div className="face-settings-mobile">
       <button ref={trigger} onClick={() => setOpen(value => !value)} aria-label="Face settings" title="Face settings"

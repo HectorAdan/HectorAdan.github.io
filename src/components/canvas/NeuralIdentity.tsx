@@ -72,11 +72,13 @@ function IdentityAtmosphere({ surface, compact, presentation, reducedMotion }: {
 
 export function NeuralIdentity({ isIntroPlaying, introRun, introductionVoice, reducedMotion, compact, onIdentityStatus, faceStyle, faceContoursVisible, ...coreProps }: Props) {
   const { size, gl, invalidate } = useThree();
+  const portrait = size.width < 768;
+  const faceLift = portrait ? -.12 : .14;
   const [surface, setSurface] = useState<THREE.BufferGeometry | null>(null);
   const speechPose = useRef<MotionPose>({ weights: { jawOpen: 0, eyeBlinkLeft: 0, eyeBlinkRight: 0 }, head: [0, 0, 0] });
   const morphs = useMemo(() => ({ current: speechPose.current.weights }), []);
   const targetPose = useRef<MotionPose>({ weights: { jawOpen: 0, eyeBlinkLeft: 0, eyeBlinkRight: 0 }, head: [0, 0, 0] });
-  const presentation = useRef({ core: 1, face: 0, assembly: 1 });
+  const presentation = useRef({ core: 1, face: 0, assembly: 1, merge: 0 });
   const face = useRef<THREE.Group>(null);
   const elapsed = useRef(0), idle = useRef(0);
   const cursor = useRef({ x: 0, y: 0, active: false });
@@ -112,7 +114,7 @@ export function NeuralIdentity({ isIntroPlaying, introRun, introductionVoice, re
     elapsed.current = 0;
     idle.current = 0;
     // Replay starts from the intact Core, rather than pulling a lit face backwards.
-    Object.assign(presentation.current, { core: 1, face: 0, assembly: 1 });
+    Object.assign(presentation.current, { core: 1, face: 0, assembly: 1, merge: 0 });
     invalidate();
   }, [introRun, invalidate]);
   useEffect(() => {
@@ -139,13 +141,14 @@ export function NeuralIdentity({ isIntroPlaying, introRun, introductionVoice, re
     if (isIntroPlaying && surface) elapsed.current += dt;
     const next = identityFrame(elapsed.current, isIntroPlaying, Boolean(surface), reducedMotion);
     const current = presentation.current;
-    for (const key of ['core', 'face', 'assembly'] as const) {
+    for (const key of ['core', 'face', 'assembly', 'merge'] as const) {
       current[key] = reducedMotion ? next[key] : THREE.MathUtils.damp(current[key], next[key], 8, dt);
     }
     if (face.current) {
       face.current.visible = current.face > .001;
       if (!reducedMotion && face.current.visible) idle.current += dt;
-      face.current.position.y = reducedMotion ? 0 : Math.sin(idle.current * .35) * .025;
+      face.current.position.y = current.merge * faceLift + (reducedMotion ? 0 : Math.sin(idle.current * .35) * .025);
+      face.current.position.z = current.merge * .4;
       face.current.getWorldPosition(faceCenter).project(camera);
       const target = cursor.current.active && isIntroPlaying
         ? identityLookTarget(cursor.current.x, cursor.current.y, faceCenter.x, faceCenter.y)
@@ -157,7 +160,6 @@ export function NeuralIdentity({ isIntroPlaying, introRun, introductionVoice, re
       face.current.rotation.z = reducedMotion ? 0 : Math.sin(idle.current * .13) * .008 + speechPose.current.head[2] * settled;
     }
   }, -1);
-  const portrait = size.width < 768;
   return <>
     <HoloAvatar {...coreProps} compact={compact} isIntroPlaying={isIntroPlaying} reducedMotion={reducedMotion} presentation={presentation} />
     {surface && <group position={portrait ? [0, 1.5, 0] : [1.15, .25, 0]}>

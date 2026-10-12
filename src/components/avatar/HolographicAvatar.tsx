@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { sampleAvatar } from './sampleAvatar';
 import { avatarLineFragment, avatarLineVertex, avatarPointFragment, avatarPointVertex, avatarShellFragment, avatarShellVertex, avatarSolidFragment } from './avatarShaders';
 import { glowFragment, glowVertex } from '../canvas/neuralGeometry';
-import type { IdentityPresentation } from '../../utils/identityIntroduction';
+import { identityCoreLayout, type IdentityPresentation } from '../../utils/identityIntroduction';
 import { MORPH_CHANNELS, type AvatarMorphPose } from './morphChannels';
 
 interface Props {
@@ -26,7 +26,7 @@ interface Props {
 }
 
 export function HolographicAvatar({ surface, compact, paused, shell, pathways, onSampled, presentation, surfaceOpacity = 1, projector = true, emergingIdentity = false, morphPose, particles = true, solid = false, portraitParticles = false, faceContoursVisible = true }: Props) {
-  const { gl } = useThree();
+  const { gl, size } = useThree();
   const samples = useMemo(() => sampleAvatar(surface, compact, emergingIdentity, portraitParticles), [surface, compact, emergingIdentity, portraitParticles]);
   const pointMaterial = useRef<THREE.ShaderMaterial>(null);
   const shellMaterial = useRef<THREE.ShaderMaterial>(null);
@@ -38,8 +38,9 @@ export function HolographicAvatar({ surface, compact, paused, shell, pathways, o
     const size = surface.boundingBox!.getSize(new THREE.Vector3());
     return { uEmergence: { value: emergingIdentity ? 1 : 0 }, uPortrait: { value: portraitParticles ? 1 : 0 }, uContours: { value: faceContoursVisible ? 1 : 0 }, uFaceExtent: { value: new THREE.Vector2(size.x * .5, size.y * .5) }, uMorphWeights: { value: new Float32Array(MORPH_CHANNELS.length) } };
   }, [surface, emergingIdentity, portraitParticles, faceContoursVisible]);
-  const pointUniforms = useMemo(() => ({ ...styleUniforms, uTime: { value: 0 }, uPixelRatio: { value: gl.getPixelRatio() }, uReveal: { value: presentation ? 0 : 1 }, uAssembly: { value: 0 }, uIntensity: { value: portraitParticles ? compact ? 2.8 : 2.4 : presentation ? compact ? 1.7 : 1.3 : 1 } }), [gl, presentation, compact, portraitParticles, styleUniforms]);
-  const shellUniforms = useMemo(() => ({ ...styleUniforms, uTime: { value: 0 }, uReveal: { value: presentation ? 0 : 1 }, uSurfaceOpacity: { value: surfaceOpacity } }), [presentation, surfaceOpacity, styleUniforms]);
+  const pointUniforms = useMemo(() => ({ ...styleUniforms, uTime: { value: 0 }, uPixelRatio: { value: gl.getPixelRatio() }, uReveal: { value: presentation ? 0 : 1 }, uAssembly: { value: 0 }, uCoreAssembly: { value: presentation ? 1 : 0 }, uCoreOrigin: { value: new THREE.Vector3() }, uCoreRadius: { value: 1.92 }, uIntensity: { value: portraitParticles ? compact ? 2.8 : 2.4 : presentation ? compact ? 1.7 : 1.3 : 1 } }), [gl, presentation, compact, portraitParticles, styleUniforms]);
+  const shellUniforms = useMemo(() => ({ ...styleUniforms, uTime: { value: 0 }, uReveal: { value: presentation ? 0 : 1 }, uSurfaceOpacity: { value: surfaceOpacity },
+    uSolidBlue: { value: new THREE.Color('#316b9a') }, uSolidCyan: { value: new THREE.Color('#82d9ee') }, uSolidViolet: { value: new THREE.Color('#9280c7') } }), [presentation, surfaceOpacity, styleUniforms]);
   const lineUniforms = useMemo(() => ({ ...styleUniforms, uTime: { value: 0 }, uMotion: { value: 1 }, uReveal: { value: presentation ? 0 : 1 }, uOpacity: { value: emergingIdentity ? .5 : .09 }, uColor: { value: new THREE.Color(emergingIdentity ? '#65b7cd' : '#43849e') } }), [presentation, emergingIdentity, styleUniforms]);
   const glowUniforms = useMemo(() => ({ uColor: { value: new THREE.Color('#164365') }, uOpacity: { value: .3 } }), []);
   useEffect(() => {
@@ -56,6 +57,11 @@ export function HolographicAvatar({ surface, compact, paused, shell, pathways, o
     const assembly = presentation?.current.assembly ?? 0;
     pointUniforms.uReveal.value = reveal;
     pointUniforms.uAssembly.value = assembly;
+    const merge = presentation?.current.merge ?? 0;
+    // The source cloud follows the retained Core in the face's local coordinates.
+    const layout = identityCoreLayout(merge, size.width < 768);
+    pointUniforms.uCoreOrigin.value.set(0, 0, -merge * .75 / .86);
+    pointUniforms.uCoreRadius.value = layout.radius / .86;
     shellUniforms.uReveal.value = reveal * (1 - assembly);
     lineUniforms.uReveal.value = reveal * THREE.MathUtils.smoothstep(1 - assembly, .5, 1);
     lineUniforms.uMotion.value = paused ? 0 : 1;
@@ -69,6 +75,8 @@ export function HolographicAvatar({ surface, compact, paused, shell, pathways, o
       pointMaterial.current.uniforms.uPixelRatio.value = gl.getPixelRatio();
       pointMaterial.current.uniforms.uReveal.value = reveal;
       pointMaterial.current.uniforms.uAssembly.value = assembly;
+      pointMaterial.current.uniforms.uCoreOrigin.value.copy(pointUniforms.uCoreOrigin.value);
+      pointMaterial.current.uniforms.uCoreRadius.value = pointUniforms.uCoreRadius.value;
       pointMaterial.current.uniforms.uIntensity.value = pointUniforms.uIntensity.value;
     }
     if (shellMaterial.current) {
@@ -86,7 +94,7 @@ export function HolographicAvatar({ surface, compact, paused, shell, pathways, o
     {shell && <mesh renderOrder={0}>
       <primitive object={surface} attach="geometry" />
       <shaderMaterial key={solid ? 'solid' : 'holographic'} ref={shellMaterial} defines={defines} vertexShader={avatarShellVertex} fragmentShader={solid ? avatarSolidFragment : avatarShellFragment} uniforms={shellUniforms}
-        transparent depthWrite={solid} side={THREE.FrontSide} />
+        transparent depthWrite={false} side={THREE.FrontSide} />
     </mesh>}
     {particles && <points renderOrder={2}>
       <primitive object={samples.points} attach="geometry" />
