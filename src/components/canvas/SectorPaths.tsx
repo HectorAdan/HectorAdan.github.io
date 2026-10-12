@@ -2,12 +2,18 @@ import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { SectorId } from '../../types/portfolio';
-import { SECTORS } from '../../data/portfolioData';
 
 export const SPATIAL_SECTORS: SectorId[] = ['about', 'projects', 'experience', 'contact'];
+// Keep the navigation around the visible Core, clear of the hero copy and footer.
+// Background relay nodes retain their wider environmental positions.
+const BEACON_POSITIONS: Record<string, [number, number, number]> = {
+  about: [-.65, 2.6, -1],
+  projects: [3.6, 2.1, -1],
+  experience: [-.65, -2.1, -.8],
+  contact: [3.5, -1.85, -.8],
+};
 export function getBeaconPosition(id: SectorId) {
-  const [x, y, z] = SECTORS[id].position;
-  return new THREE.Vector3(x, y + (id === 'about' ? 1.1 : 0), z);
+  return new THREE.Vector3(...(BEACON_POSITIONS[id] ?? [0, 0, 0]));
 }
 const vertexShader = `
   attribute float aProgress;
