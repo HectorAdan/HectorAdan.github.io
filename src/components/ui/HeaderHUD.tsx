@@ -1,6 +1,5 @@
-import { Volume2, VolumeX, Eye, Pause, Play } from 'lucide-react';
+import { Volume2, VolumeX, Pause, Play } from 'lucide-react';
 import { SectorId } from '../../types/portfolio';
-import type { AvatarRenderMode } from '../canvas/HoloAvatar';
 interface HeaderHUDProps {
   activeSector: SectorId;
   previewSector: SectorId | null;
@@ -8,9 +7,6 @@ interface HeaderHUDProps {
   onSelectSector: (sector: SectorId) => void;
   isMuted: boolean;
   onToggleMute: () => void;
-  avatarMode: AvatarRenderMode;
-  onCycleAvatarMode: () => void;
-  onTriggerIntro: () => void;
   motionReduced: boolean;
   motionLocked: boolean;
   onToggleMotion: () => void;
@@ -19,8 +15,7 @@ const navigation: { id: SectorId; label: string }[] = [
   { id: 'home', label: 'Core' }, { id: 'about', label: 'About' },
   { id: 'projects', label: 'Projects' }, { id: 'experience', label: 'Experience' }, { id: 'contact', label: 'Contact' },
 ];
-const appearances = { hologram: 'Luminous', silhouette: 'Quiet', matrix: 'Pathways' };
-export function HeaderHUD({ activeSector, onSelectSector, isMuted, onToggleMute, avatarMode, onCycleAvatarMode, previewSector, onPreviewSector, motionReduced, motionLocked, onToggleMotion }: HeaderHUDProps) {
+export function HeaderHUD({ activeSector, onSelectSector, isMuted, onToggleMute, previewSector, onPreviewSector, motionReduced, motionLocked, onToggleMotion }: HeaderHUDProps) {
   return <header className="interface-header">
     <button className="interface-brand" onClick={() => onSelectSector('home')} aria-label="Return to central neural core">
       <span className="brand-symbol" aria-hidden="true">h<span>.</span></span>
@@ -34,7 +29,6 @@ export function HeaderHUD({ activeSector, onSelectSector, isMuted, onToggleMute,
         onClick={() => onSelectSector(id)} aria-current={activeSector === id ? 'page' : undefined}>{label}</button>)}
     </nav>
     <div className="interface-controls">
-      <button onClick={onCycleAvatarMode} aria-label={`Core appearance: ${appearances[avatarMode]}. Change appearance`} title={`Core appearance: ${appearances[avatarMode]}`}><Eye size={16} /></button>
       <button onClick={onToggleMotion} aria-keyshortcuts="P" aria-pressed={motionReduced} disabled={motionLocked}
         aria-label={motionLocked ? 'Motion reduced by system preference' : motionReduced ? 'Restore motion' : 'Reduce motion'}
         title={motionLocked ? 'Reduced motion follows your system preference' : motionReduced ? 'Restore motion (P)' : 'Reduce motion (P)'}>

@@ -12,6 +12,7 @@ import { SectorBeacons } from './SectorBeacons';
 import { SectorPaths } from './SectorPaths';
 import { CameraController } from './CameraController';
 import { WebGLFallback } from '../ui/WebGLFallback';
+import type { FaceStyle } from '../../utils/faceStyle';
 import type { EntrancePhase } from '../../utils/entrance';
 
 const CAMERA = { position: [0, 0, 9.5] as [number, number, number], fov: 44, near: .1, far: 80 };
@@ -29,6 +30,8 @@ export interface SceneProps {
   onIntroComplete?: () => void;
   reducedMotion?: boolean;
   avatarMode?: AvatarRenderMode;
+  faceStyle?: FaceStyle;
+  faceContoursVisible?: boolean;
   onAvatarClick?: () => void;
   onReady?: () => void;
   entrancePhase?: EntrancePhase;
@@ -77,7 +80,7 @@ function FirstFrame({ onReady }: { onReady?: () => void }) {
   return null;
 }
 
-export function Scene({ activeSector, onSelectSector, isIntroPlaying, introRun = 0, introductionVoice, speechActive = false, onIdentityStatus, onIntroComplete, reducedMotion = false, avatarMode = 'hologram', onAvatarClick, previewSector, onPreviewSector, onReady, entrancePhase = 'done' }: SceneProps) {
+export function Scene({ activeSector, onSelectSector, isIntroPlaying, introRun = 0, introductionVoice, speechActive = false, onIdentityStatus, onIntroComplete, reducedMotion = false, avatarMode = 'hologram', faceStyle = 'neural', faceContoursVisible = true, onAvatarClick, previewSector, onPreviewSector, onReady, entrancePhase = 'done' }: SceneProps) {
   const labelPortal = useRef<HTMLDivElement>(null);
   const [failed, setFailed] = useState(false);
   const handleContextLost = useCallback(() => { setFailed(true); onIdentityStatus?.('unavailable'); onReady?.(); }, [onReady, onIdentityStatus]);
@@ -111,7 +114,7 @@ export function Scene({ activeSector, onSelectSector, isIntroPlaying, introRun =
         <Suspense fallback={null}>
           <ParticleField reducedMotion={reducedMotion} compact={compact} />
           <NeuralNetwork activeSector={activeSector} onSelectSector={onSelectSector} reducedMotion={reducedMotion} compact={compact} />
-          <NeuralIdentity introductionVoice={introductionVoice} introRun={introRun} onIdentityStatus={onIdentityStatus} entrancePhase={entrancePhase} engaged={Boolean(previewSector) || activeSector !== 'home'} isIntroPlaying={isIntroPlaying} onAvatarClick={onAvatarClick} reducedMotion={reducedMotion} avatarMode={avatarMode} compact={compact} />
+          <NeuralIdentity faceContoursVisible={faceContoursVisible} faceStyle={faceStyle} introductionVoice={introductionVoice} introRun={introRun} onIdentityStatus={onIdentityStatus} entrancePhase={entrancePhase} engaged={Boolean(previewSector) || activeSector !== 'home'} isIntroPlaying={isIntroPlaying} onAvatarClick={onAvatarClick} reducedMotion={reducedMotion} avatarMode={avatarMode} compact={compact} />
           {!compact && <SectorBeacons previewSector={previewSector} onPreviewSector={onPreviewSector} activeSector={activeSector} onSelectSector={onSelectSector} reducedMotion={reducedMotion} portal={labelPortal} />}
           {!compact && <SectorPaths highlightedSector={activeSector === 'home' ? previewSector : activeSector} reducedMotion={reducedMotion} />}
           <CameraController introRun={introRun} entrancePhase={entrancePhase} activeSector={activeSector} isIntroPlaying={isIntroPlaying} onIntroComplete={onIntroComplete} reducedMotion={reducedMotion} />

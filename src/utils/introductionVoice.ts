@@ -28,6 +28,7 @@ export class IntroductionVoice {
 
   subscribe(listener: (status: VoiceStatus) => void) {
     this.listeners.add(listener);
+    listener(this.status);
     return () => { this.listeners.delete(listener); };
   }
 

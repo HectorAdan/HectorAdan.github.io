@@ -75,3 +75,35 @@ Pause/Play voice preserves playback position; Replay resets both audio and Core 
 With reduced motion, only the explicitly played jaw deformation continues; blinking, speech head movement and environmental effects remain disabled. The canvas renders frames while the voice is active so reduced-motion speech still animates, then returns to demand rendering. No per-frame React state updates, new dependencies, backend, synthetic voice generation or external upload is involved. Playback failure leaves a Retry voice control and usable introduction/navigation.
 
 Checks: `node scripts/check-introduction-voice.mjs`, all three avatar checks above, and `npm run build`. The voice lifecycle check covers synchronous gesture unlock, assembly delay, pause/resume of both delayed and active speech, playback-clock morphs, mute, reduced motion, cancellation during download, replay without overlap, natural completion and retry.
+
+## Portfolio face appearance control
+
+Face controls are available inside Meet Hector. Inside the introduction, the eye button with its current style label cycles **Neural → Particles → Solid**. The selected style stays in memory across closing/reopening the introduction. Neural keeps the current sparse connections and faint depth shell; Particles uses a dedicated balanced facial sampling presentation without pathways; Solid uses an opaque neutral clay shader on the same facial surface. The Solid mode does not add skin textures, skull geometry or a new model.
+
+The style is independent of the Core's appearance and of the voice controller. Changing styles neither restarts the recording nor replays the Core transition. All three presentations share the existing jaw/blink morphs and cursor following. The isolated prototype and talking study retain their original settings. Solid shading reuses the same morph vertex shader; particle bindings are resampled only when switching between the existing sampling presentations, not every frame.
+
+## Idle facial presence
+
+The portfolio face continues blinking and making very small attentive nods/tilts while its voice is idle, paused, loading, waiting, ended or unavailable. `idlePose` provides an unbounded deterministic blink schedule with varying intervals and occasional double blinks. It never opens the jaw or reads microphone/video input. During speech, the original audio-driven jaw remains in control. The home renderer eases blink and head transitions, and gently closes the jaw when speech stops; cursor following still works.
+
+This uses only the existing blink morph targets and rigid head movement, shared by all three face styles. A smile requires a suitable additional morph target and is not synthesized by distorting the jaw. Closing the introduction disables idle presence. Hidden tabs stop rendering; reduced motion disables idle blinking and head movement while explicitly played audio can still drive the jaw. The isolated talking preview keeps its existing media-clock pause behavior.
+
+The talking-avatar check now additionally validates ongoing idle blinking over two minutes, a neutral silent jaw, bounded head movements, long-session behavior and complete reduced-motion suppression.
+
+## Refined particle portrait
+
+The portfolio's Particles style opts into `portraitParticles`. It uses 6,200 points on desktop and 3,200 on compact devices, including a small fixed set of contour dots. Surface density is uniform rather than using the bust sampler's upper-body/front weighting. Stratified triangle-area quantiles reduce random density fluctuations between triangles. Finer, more consistent point sizes, restrained cyan/blue colors, balanced lighting and no individual sparkles keep the facial plane quieter while retaining brightness.
+
+`particleContours.ts` samples actual boundary edges around the existing MediaPipe mask's lip and eyelid openings. It creates no new geometry and does not fill the openings. These points retain the same source-edge barycentric bindings as other animated samples, so blinking and speech keep their contours attached. Contour selection is specific to the named 478-vertex facial topology; other models fall back to balanced surface sampling. The particle-only presentation skips building a hidden Plexus graph.
+
+The profile is opt-in: Neural and Solid portfolio modes, the Core, and the isolated studies keep their existing sampling/material defaults. The particle morph checks cover desktop and compact settings, deterministic sampling, lower-face coverage, contour presence and exact attachment to the deformed source.
+
+### Optional face contours
+
+Neural and Particles modes expose a **Contours on/off** button directly after the style control in the top toolbar. It hides the tagged contour dots in Particles, and the separately tagged source-boundary outline segments in Neural, through a shader uniform. Regular neural connections remain visible. Solid does not show a contour option. Main surface samples, their morph attributes, the jaw/blink animation and the audio clock are unchanged. Toggling does not rebuild or resample geometry. The preference remains in memory when changing styles or closing/reopening the introduction. The underlying face geometry and all speech/blink channels are unaffected.
+
+### Responsive face settings
+
+Face appearance options live in the introduction toolbar, next to mute and close. Desktop shows the style cycle followed immediately by the face-contour toggle inline for Neural and Particles; Solid only shows its style control. At mobile/tablet widths below 768px, a settings icon opens a compact vertical panel with a native appearance selector and the contour toggle when Neural or Particles is selected. Playback and navigation actions remain below the introduction copy.
+
+The panel closes with its close button, the settings trigger, an outside click or Escape. Escape dismisses the panel before the introduction and returns focus to the trigger. Opening focuses the appearance selector; the existing introduction focus trap includes all panel controls. Switching to desktop closes a mobile panel, and portfolio shortcuts are ignored while operating the native selector. Appearance settings do not reset audio, animation or the chosen contour preference.

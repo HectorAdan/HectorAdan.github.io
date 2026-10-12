@@ -5,11 +5,12 @@ import { HoloAvatar, type AvatarRenderMode } from './HoloAvatar';
 import { HolographicAvatar } from '../avatar/HolographicAvatar';
 import { loadTalkingSurface } from '../avatar/talkingSurface';
 import type { IntroductionVoice } from '../../utils/introductionVoice';
-import type { MotionPose } from '../avatar/talkingMotion';
+import { idlePose, type MotionPose } from '../avatar/talkingMotion';
 import { avatarPointFragment, avatarPointVertex } from '../avatar/avatarShaders';
 import { seededRandom } from './neuralGeometry';
 import { identityFrame, identityLookTarget, type IdentityPresentation, type IdentityStatus } from '../../utils/identityIntroduction';
 import type { EntrancePhase } from '../../utils/entrance';
+import type { FaceStyle } from '../../utils/faceStyle';
 
 // Replace this self-contained, neutral GLB when the next personalized model is ready.
 export const IDENTITY_MODEL_PATH = 'models/hector-mediapipe-poc.glb';
@@ -22,6 +23,8 @@ interface Props {
   engaged: boolean;
   entrancePhase: EntrancePhase;
   avatarMode: AvatarRenderMode;
+  faceStyle: FaceStyle;
+  faceContoursVisible: boolean;
   onAvatarClick?: () => void;
   onIdentityStatus?: (status: IdentityStatus) => void;
 }
@@ -46,9 +49,10 @@ function IdentityAtmosphere({ surface, compact, presentation, reducedMotion }: {
     g.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
     g.setAttribute('aSeed', new THREE.Float32BufferAttribute(seeds, 1));
     g.setAttribute('aAnchor', new THREE.Float32BufferAttribute(new Float32Array(count), 1));
+    g.setAttribute('aFeature', new THREE.Float32BufferAttribute(new Float32Array(count), 1));
     g.computeBoundingSphere(); return g;
   }, [surface, compact]);
-  const uniforms = useMemo(() => ({ uTime: { value: 0 }, uPixelRatio: { value: gl.getPixelRatio() }, uReveal: { value: 0 }, uAssembly: { value: 0 }, uIntensity: { value: .65 }, uEmergence: { value: 0 }, uFaceExtent: { value: new THREE.Vector2(1, 1) } }), [gl]);
+  const uniforms = useMemo(() => ({ uTime: { value: 0 }, uPixelRatio: { value: gl.getPixelRatio() }, uReveal: { value: 0 }, uAssembly: { value: 0 }, uIntensity: { value: .65 }, uEmergence: { value: 0 }, uPortrait: { value: 0 }, uContours: { value: 1 }, uFaceExtent: { value: new THREE.Vector2(1, 1) } }), [gl]);
   useEffect(() => () => geometry.dispose(), [geometry]);
   useFrame((_, delta) => {
     if (!reducedMotion) uniforms.uTime.value += Math.min(delta, .05);
@@ -66,11 +70,12 @@ function IdentityAtmosphere({ surface, compact, presentation, reducedMotion }: {
   </points>;
 }
 
-export function NeuralIdentity({ isIntroPlaying, introRun, introductionVoice, reducedMotion, compact, onIdentityStatus, ...coreProps }: Props) {
+export function NeuralIdentity({ isIntroPlaying, introRun, introductionVoice, reducedMotion, compact, onIdentityStatus, faceStyle, faceContoursVisible, ...coreProps }: Props) {
   const { size, gl, invalidate } = useThree();
   const [surface, setSurface] = useState<THREE.BufferGeometry | null>(null);
   const speechPose = useRef<MotionPose>({ weights: { jawOpen: 0, eyeBlinkLeft: 0, eyeBlinkRight: 0 }, head: [0, 0, 0] });
   const morphs = useMemo(() => ({ current: speechPose.current.weights }), []);
+  const targetPose = useRef<MotionPose>({ weights: { jawOpen: 0, eyeBlinkLeft: 0, eyeBlinkRight: 0 }, head: [0, 0, 0] });
   const presentation = useRef({ core: 1, face: 0, assembly: 1 });
   const face = useRef<THREE.Group>(null);
   const elapsed = useRef(0), idle = useRef(0);
@@ -105,6 +110,7 @@ export function NeuralIdentity({ isIntroPlaying, introRun, introductionVoice, re
   }, [isIntroPlaying, reducedMotion, gl]);
   useEffect(() => {
     elapsed.current = 0;
+    idle.current = 0;
     // Replay starts from the intact Core, rather than pulling a lit face backwards.
     Object.assign(presentation.current, { core: 1, face: 0, assembly: 1 });
     invalidate();
@@ -120,7 +126,16 @@ export function NeuralIdentity({ isIntroPlaying, introRun, introductionVoice, re
   }, [onIdentityStatus, invalidate]);
   useFrame(({ camera }, delta) => {
     const dt = Math.min(delta, .05);
-    introductionVoice?.sample(reducedMotion, speechPose.current);
+    introductionVoice?.sample(reducedMotion, targetPose.current);
+    const speaking = isIntroPlaying && introductionVoice?.status === 'playing';
+    if (!speaking) idlePose(idle.current, reducedMotion || !isIntroPlaying, targetPose.current);
+    // Keep the speech jaw's existing smoothing; ease into idle when it stops.
+    for (const channel of ['jawOpen', 'eyeBlinkLeft', 'eyeBlinkRight'] as const) {
+      const target = targetPose.current.weights[channel] ?? 0;
+      const instant = (speaking && channel === 'jawOpen') || reducedMotion;
+      speechPose.current.weights[channel] = instant ? target : THREE.MathUtils.damp(speechPose.current.weights[channel] ?? 0, target, channel === 'jawOpen' ? 16 : 50, dt);
+    }
+    for (let i = 0; i < 3; i++) speechPose.current.head[i] = reducedMotion ? 0 : THREE.MathUtils.damp(speechPose.current.head[i], targetPose.current.head[i], 6, dt);
     if (isIntroPlaying && surface) elapsed.current += dt;
     const next = identityFrame(elapsed.current, isIntroPlaying, Boolean(surface), reducedMotion);
     const current = presentation.current;
@@ -147,7 +162,9 @@ export function NeuralIdentity({ isIntroPlaying, introRun, introductionVoice, re
     <HoloAvatar {...coreProps} compact={compact} isIntroPlaying={isIntroPlaying} reducedMotion={reducedMotion} presentation={presentation} />
     {surface && <group position={portrait ? [0, 1.5, 0] : [1.15, .25, 0]}>
       <group ref={face} scale={.86} visible={false}>
-        <HolographicAvatar surface={surface} compact={compact} paused={reducedMotion} shell pathways presentation={presentation} surfaceOpacity={.06} projector={false} emergingIdentity morphPose={surface.hasAttribute('aJawDelta') ? morphs : undefined} />
+        <HolographicAvatar surface={surface} compact={compact} paused={reducedMotion} shell={faceStyle !== 'particles'} pathways={faceStyle === 'neural'}
+          particles={faceStyle !== 'solid'} solid={faceStyle === 'solid'} presentation={presentation} surfaceOpacity={.06} projector={false}
+          emergingIdentity={faceStyle === 'neural'} portraitParticles={faceStyle === 'particles'} faceContoursVisible={faceContoursVisible} morphPose={surface.hasAttribute('aJawDelta') ? morphs : undefined} />
         <IdentityAtmosphere surface={surface} compact={compact} presentation={presentation} reducedMotion={reducedMotion} />
       </group>
     </group>}

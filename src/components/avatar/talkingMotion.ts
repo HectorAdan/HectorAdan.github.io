@@ -56,16 +56,43 @@ export function blinkSchedule(duration: number) {
   return events;
 }
 
+function blinkEnvelope(t: number) {
+  if (t < 0 || t > .22) return 0;
+  // Quick closing, a brief hold, and a gentler reopening.
+  if (t < .065) return Math.sin(t / .065 * Math.PI / 2) ** 2;
+  if (t < .095) return 1;
+  return Math.cos((t - .095) / .125 * Math.PI / 2) ** 2;
+}
+
 function blinkWeight(time: number, events: readonly number[]) {
   for (const start of events) {
-    const t = time - start;
-    if (t < 0 || t > .22) continue;
-    // Quick closing, a brief hold, and a gentler reopening.
-    if (t < .065) return Math.sin(t / .065 * Math.PI / 2) ** 2;
-    if (t < .095) return 1;
-    return Math.cos((t - .095) / .125 * Math.PI / 2) ** 2;
+    if (time >= start && time <= start + .22) return blinkEnvelope(time - start);
   }
   return 0;
+}
+
+/** Quiet presence only: no microphone, expression tracking or invented speech. */
+export function idlePose(time: number, reducedMotion: boolean, output: MotionPose) {
+  output.weights.jawOpen = 0;
+  if (reducedMotion) {
+    output.weights.eyeBlinkLeft = output.weights.eyeBlinkRight = 0;
+    output.head.fill(0);
+    return;
+  }
+  // Infinite deterministic schedule with varying intervals, no growing event array.
+  const cycle = Math.floor(Math.max(0, time) / 6.2);
+  const fraction = (value: number) => value - Math.floor(value);
+  const random = fraction(Math.sin((cycle + 1) * 127.1) * 43758.5453);
+  const age = time - cycle * 6.2 - (1.6 + random * 1.8);
+  const blink = Math.max(blinkEnvelope(age), random < .18 ? blinkEnvelope(age - .34) * .9 : 0);
+  output.weights.eyeBlinkLeft = blink;
+  output.weights.eyeBlinkRight = Math.max(blinkEnvelope(age - .012), random < .18 ? blinkEnvelope(age - .352) * .9 : 0);
+  // An occasional small nod and relaxed tilt suggest attentiveness without swaying.
+  const nodAge = time % 13.7 - 8.5;
+  const nod = nodAge >= 0 && nodAge < 1.5 ? Math.sin(nodAge / 1.5 * Math.PI) ** 2 * .022 : 0;
+  output.head[0] = Math.sin(time * .36) * .008 + nod;
+  output.head[1] = Math.sin(time * .23) * .012;
+  output.head[2] = Math.sin(time * .19) * .004;
 }
 
 export function speechPose(track: SpeechTrack, time: number, events: readonly number[], reducedMotion: boolean, output: MotionPose) {

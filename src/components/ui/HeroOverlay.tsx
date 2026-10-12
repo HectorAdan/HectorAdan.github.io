@@ -2,6 +2,8 @@ import { ArrowRight, RotateCcw, X, Pause, Play, Volume2, VolumeX } from 'lucide-
 import { PERSONAL_INFO } from '../../data/portfolioData';
 import { SectorId } from '../../types/portfolio';
 import type { IdentityStatus } from '../../utils/identityIntroduction';
+import { FaceSettings } from './FaceSettings';
+import type { FaceStyle } from '../../utils/faceStyle';
 import type { VoiceStatus } from '../../utils/introductionVoice';
 
 interface HeroOverlayProps {
@@ -13,13 +15,17 @@ interface HeroOverlayProps {
   identityStatus: IdentityStatus;
   onReplayIntro: () => void;
   onReplayEntrance?: () => void;
+  faceStyle: FaceStyle;
+  onSelectFaceStyle: (style: FaceStyle) => void;
+  faceContoursVisible: boolean;
+  onToggleFaceContours: () => void;
   voiceStatus: VoiceStatus;
   onToggleVoice: () => void;
   isMuted: boolean;
   onToggleMute: () => void;
 }
 
-export function HeroOverlay({ onMeetHector, onCloseIntro, onExplore, isIntroPlaying, introRun, identityStatus, onReplayIntro, onReplayEntrance, voiceStatus, onToggleVoice, isMuted, onToggleMute }: HeroOverlayProps) {
+export function HeroOverlay({ onMeetHector, onCloseIntro, onExplore, isIntroPlaying, introRun, identityStatus, onReplayIntro, onReplayEntrance, faceStyle, onSelectFaceStyle, faceContoursVisible, onToggleFaceContours, voiceStatus, onToggleVoice, isMuted, onToggleMute }: HeroOverlayProps) {
   const voiceActive = voiceStatus === 'playing' || voiceStatus === 'waiting' || voiceStatus === 'loading';
   return <>
     <div className="hero-layout pointer-events-none" inert={isIntroPlaying} aria-hidden={isIntroPlaying || undefined}>
@@ -46,6 +52,7 @@ export function HeroOverlay({ onMeetHector, onCloseIntro, onExplore, isIntroPlay
       <header className="identity-toolbar">
         <span className="identity-wordmark">THE INTELLIGENCE INTERFACE</span>
         <div className="identity-toolbar-actions">
+        <FaceSettings style={faceStyle} onSelectStyle={onSelectFaceStyle} contoursVisible={faceContoursVisible} onToggleContours={onToggleFaceContours} />
         <button onClick={onToggleMute} aria-label={isMuted ? 'Unmute introduction' : 'Mute introduction'} aria-pressed={isMuted}>
           {isMuted ? <VolumeX size={18} aria-hidden="true" /> : <Volume2 size={18} aria-hidden="true" />}
         </button>

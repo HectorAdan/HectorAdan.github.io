@@ -30,19 +30,23 @@ export const avatarPointVertex = `
   uniform float uPixelRatio;
   uniform float uAssembly;
   uniform float uIntensity;
+  uniform float uPortrait;
   attribute float aSeed;
   attribute float aAnchor;
+  attribute float aFeature;
   varying vec3 vColor;
   varying float vFacing;
   varying float vSeed;
   varying float vY;
   varying float vReconstruction;
   varying float vAnchor;
+  varying float vFeature;
   ${emergenceField}
   void main() {
     vec3 facialPosition = avatarMorphPosition(position);
     float feature = featureWeight(position);
     vAnchor = aAnchor;
+    vFeature = aFeature;
     vReconstruction = mix(1.0, reconstructionWeight(position), uEmergence);
     float angle = aSeed * 62.83;
     vec3 cloud = normalize(position + vec3(sin(angle), cos(angle * .7), sin(angle * .4))) * (1.35 + aSeed * .35);
@@ -58,9 +62,13 @@ export const avatarPointVertex = `
     vFacing = max(0.0, dot(viewNormal, normalize(-mv.xyz)));
     float light = max(0.0, dot(viewNormal, normalize(vec3(-.6, .8, 1.3))));
     vec3 tint = mix(color, mix(vec3(.08, .32, .70), vec3(.22, .86, .95), feature), uEmergence * .35);
-    vColor = tint * mix(.48 + .70 * light, .65 + .65 * light, uEmergence); vSeed = aSeed; vY = position.y;
+    vColor = tint * mix(.48 + .70 * light, .65 + .65 * light, uEmergence);
+    vColor = mix(vColor, tint * (.78 + .25 * light), uPortrait);
+    vSeed = aSeed; vY = position.y;
     gl_Position = projectionMatrix * mv;
-    gl_PointSize = clamp(mix(2.1 + aSeed * 1.4, 1.25 + aSeed * .5 + aAnchor * .45, uEmergence) * uPixelRatio * sqrt(uIntensity) * (7.0 / -mv.z), mix(1.2, 1.0, uEmergence), 6.0);
+    float pointSize = mix(2.1 + aSeed * 1.4, 1.25 + aSeed * .5 + aAnchor * .45, uEmergence);
+    pointSize = mix(pointSize, 1.5 + aSeed * .25 + aFeature * .08, uPortrait);
+    gl_PointSize = clamp(pointSize * uPixelRatio * sqrt(uIntensity) * (7.0 / -mv.z), mix(1.2, 1.0, max(uEmergence, uPortrait)), 6.0);
   }
 `;
 export const avatarPointFragment = `
@@ -68,12 +76,15 @@ export const avatarPointFragment = `
   uniform float uReveal;
   uniform float uIntensity;
   uniform float uEmergence;
+  uniform float uPortrait;
+  uniform float uContours;
   varying vec3 vColor;
   varying float vFacing;
   varying float vSeed;
   varying float vY;
   varying float vReconstruction;
   varying float vAnchor;
+  varying float vFeature;
   void main() {
     float d = length(gl_PointCoord - .5) * 2.0;
     if (d > 1.0) discard;
@@ -81,10 +92,13 @@ export const avatarPointFragment = `
     float breath = .90 + .10 * sin(uTime * .65 + vY * 1.8);
     float signal = pow(max(0.0, sin(vSeed * 93.0 + uTime * .28)), 24.0);
     float opacity = mix(.035 + .78 * pow(vFacing, 1.3), (.08 + .85 * pow(vFacing, .85)) * mix(.18, 1.0, vAnchor), uEmergence) * breath;
+    opacity = mix(opacity, (.13 + .55 * pow(vFacing, 1.15)) * (.94 + .06 * breath) + vFeature * .04, uPortrait);
     float arrival = smoothstep(vSeed * .16, .84 + vSeed * .16, uReveal);
     float coverage = mix(1.0, smoothstep(vSeed - .06, vSeed + .06, .35 + vReconstruction * .72), uEmergence);
     float structure = mix(1.0, .35 + vReconstruction * .65, uEmergence);
-    gl_FragColor = vec4(vColor * (1.0 + signal * .35) * uIntensity, dotCore * opacity * arrival * coverage * structure);
+    float particleCore = mix(dotCore, exp(-d * d * 4.5), uPortrait);
+    float contourVisibility = mix(1.0, uContours, vFeature * uPortrait);
+    gl_FragColor = vec4(vColor * (1.0 + signal * .35 * (1.0 - uPortrait)) * uIntensity, particleCore * opacity * arrival * coverage * structure * contourVisibility);
     #include <tonemapping_fragment>
     #include <colorspace_fragment>
   }
@@ -125,19 +139,43 @@ export const avatarShellFragment = `
     #include <colorspace_fragment>
   }
 `;
+// A neutral clay surface uses the same morph vertex shader as the hologram.
+export const avatarSolidFragment = `
+  uniform float uReveal;
+  varying vec3 vNormal;
+  varying vec3 vView;
+  void main() {
+    if (uReveal < .001) discard;
+    vec3 n = normalize(vNormal);
+    vec3 view = normalize(vView);
+    vec3 key = normalize(vec3(-.55, .75, 1.1));
+    float diffuse = max(0.0, dot(n, key));
+    float fill = max(0.0, dot(n, normalize(vec3(.6, .15, .8))));
+    float specular = pow(max(0.0, dot(n, normalize(key + view))), 40.0);
+    float rim = pow(1.0 - max(0.0, dot(n, view)), 3.0);
+    vec3 color = vec3(.32, .38, .43) * (.34 + diffuse * .62 + fill * .25);
+    color += specular * vec3(.12, .15, .18) + rim * vec3(.025, .075, .09);
+    gl_FragColor = vec4(color, uReveal);
+    #include <tonemapping_fragment>
+    #include <colorspace_fragment>
+  }
+`;
 // Pathways remain registered to the surface: illumination moves, the face does not.
 export const avatarLineVertex = `
   ${avatarMorphGLSL}
   attribute float aProgress;
   attribute float aPhase;
+  attribute float aContour;
   varying float vProgress;
   varying float vPhase;
   varying float vDepth;
   varying float vStructure;
+  varying float vContour;
   ${emergenceField}
   void main() {
     vStructure = mix(1.0, reconstructionWeight(position), uEmergence);
     vProgress = aProgress; vPhase = aPhase;
+    vContour = aContour;
     vec4 mv = modelViewMatrix * vec4(avatarMorphPosition(position), 1.0);
     vDepth = -mv.z;
     gl_Position = projectionMatrix * mv;
@@ -146,5 +184,5 @@ export const avatarLineVertex = `
 
 // Reuse the existing electrical pulse shader, fading the entire pathway including pulses.
 export const avatarLineFragment = neuralLineFragment
-  .replace('uniform float uTime;', 'uniform float uTime;\n  uniform float uReveal;\n  varying float vStructure;')
-  .replace('(uOpacity + energy * .65) * fog', '(uOpacity + energy * .65) * fog * uReveal * vStructure * vStructure');
+  .replace('uniform float uTime;', 'uniform float uTime;\n  uniform float uReveal;\n  uniform float uContours;\n  varying float vStructure;\n  varying float vContour;')
+  .replace('(uOpacity + energy * .65) * fog', '(uOpacity + energy * .65) * fog * uReveal * vStructure * vStructure * mix(1.0, uContours, vContour)');

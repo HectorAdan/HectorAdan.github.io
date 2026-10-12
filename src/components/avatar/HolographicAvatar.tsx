@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { sampleAvatar } from './sampleAvatar';
-import { avatarLineFragment, avatarLineVertex, avatarPointFragment, avatarPointVertex, avatarShellFragment, avatarShellVertex } from './avatarShaders';
+import { avatarLineFragment, avatarLineVertex, avatarPointFragment, avatarPointVertex, avatarShellFragment, avatarShellVertex, avatarSolidFragment } from './avatarShaders';
 import { glowFragment, glowVertex } from '../canvas/neuralGeometry';
 import type { IdentityPresentation } from '../../utils/identityIntroduction';
 import { MORPH_CHANNELS, type AvatarMorphPose } from './morphChannels';
@@ -20,11 +20,14 @@ interface Props {
   emergingIdentity?: boolean;
   morphPose?: AvatarMorphPose;
   particles?: boolean;
+  solid?: boolean;
+  portraitParticles?: boolean;
+  faceContoursVisible?: boolean;
 }
 
-export function HolographicAvatar({ surface, compact, paused, shell, pathways, onSampled, presentation, surfaceOpacity = 1, projector = true, emergingIdentity = false, morphPose, particles = true }: Props) {
+export function HolographicAvatar({ surface, compact, paused, shell, pathways, onSampled, presentation, surfaceOpacity = 1, projector = true, emergingIdentity = false, morphPose, particles = true, solid = false, portraitParticles = false, faceContoursVisible = true }: Props) {
   const { gl } = useThree();
-  const samples = useMemo(() => sampleAvatar(surface, compact, emergingIdentity), [surface, compact, emergingIdentity]);
+  const samples = useMemo(() => sampleAvatar(surface, compact, emergingIdentity, portraitParticles), [surface, compact, emergingIdentity, portraitParticles]);
   const pointMaterial = useRef<THREE.ShaderMaterial>(null);
   const shellMaterial = useRef<THREE.ShaderMaterial>(null);
   const lineMaterial = useRef<THREE.ShaderMaterial>(null);
@@ -33,9 +36,9 @@ export function HolographicAvatar({ surface, compact, paused, shell, pathways, o
   const styleUniforms = useMemo(() => {
     surface.computeBoundingBox();
     const size = surface.boundingBox!.getSize(new THREE.Vector3());
-    return { uEmergence: { value: emergingIdentity ? 1 : 0 }, uFaceExtent: { value: new THREE.Vector2(size.x * .5, size.y * .5) }, uMorphWeights: { value: new Float32Array(MORPH_CHANNELS.length) } };
-  }, [surface, emergingIdentity]);
-  const pointUniforms = useMemo(() => ({ ...styleUniforms, uTime: { value: 0 }, uPixelRatio: { value: gl.getPixelRatio() }, uReveal: { value: presentation ? 0 : 1 }, uAssembly: { value: 0 }, uIntensity: { value: presentation ? compact ? 1.7 : 1.3 : 1 } }), [gl, presentation, compact, styleUniforms]);
+    return { uEmergence: { value: emergingIdentity ? 1 : 0 }, uPortrait: { value: portraitParticles ? 1 : 0 }, uContours: { value: faceContoursVisible ? 1 : 0 }, uFaceExtent: { value: new THREE.Vector2(size.x * .5, size.y * .5) }, uMorphWeights: { value: new Float32Array(MORPH_CHANNELS.length) } };
+  }, [surface, emergingIdentity, portraitParticles, faceContoursVisible]);
+  const pointUniforms = useMemo(() => ({ ...styleUniforms, uTime: { value: 0 }, uPixelRatio: { value: gl.getPixelRatio() }, uReveal: { value: presentation ? 0 : 1 }, uAssembly: { value: 0 }, uIntensity: { value: portraitParticles ? compact ? 2.8 : 2.4 : presentation ? compact ? 1.7 : 1.3 : 1 } }), [gl, presentation, compact, portraitParticles, styleUniforms]);
   const shellUniforms = useMemo(() => ({ ...styleUniforms, uTime: { value: 0 }, uReveal: { value: presentation ? 0 : 1 }, uSurfaceOpacity: { value: surfaceOpacity } }), [presentation, surfaceOpacity, styleUniforms]);
   const lineUniforms = useMemo(() => ({ ...styleUniforms, uTime: { value: 0 }, uMotion: { value: 1 }, uReveal: { value: presentation ? 0 : 1 }, uOpacity: { value: emergingIdentity ? .5 : .09 }, uColor: { value: new THREE.Color(emergingIdentity ? '#65b7cd' : '#43849e') } }), [presentation, emergingIdentity, styleUniforms]);
   const glowUniforms = useMemo(() => ({ uColor: { value: new THREE.Color('#164365') }, uOpacity: { value: .3 } }), []);
@@ -82,8 +85,8 @@ export function HolographicAvatar({ surface, compact, paused, shell, pathways, o
     {/* The source surface is owned by the loader, not by R3F's auto-disposal. */}
     {shell && <mesh renderOrder={0}>
       <primitive object={surface} attach="geometry" />
-      <shaderMaterial ref={shellMaterial} defines={defines} vertexShader={avatarShellVertex} fragmentShader={avatarShellFragment} uniforms={shellUniforms}
-        transparent depthWrite={false} side={THREE.FrontSide} />
+      <shaderMaterial key={solid ? 'solid' : 'holographic'} ref={shellMaterial} defines={defines} vertexShader={avatarShellVertex} fragmentShader={solid ? avatarSolidFragment : avatarShellFragment} uniforms={shellUniforms}
+        transparent depthWrite={solid} side={THREE.FrontSide} />
     </mesh>}
     {particles && <points renderOrder={2}>
       <primitive object={samples.points} attach="geometry" />

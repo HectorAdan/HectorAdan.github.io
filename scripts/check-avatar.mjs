@@ -8,13 +8,14 @@ import * as THREE from 'three';
 
 // Validate the source-independent geometry boundary without a browser or test dependency.
 const temporary = await mkdtemp(join(tmpdir(), 'avatar-check-'));
-const files = ['avatarSurface', 'sampleAvatar', 'neuralGeometry', 'morphChannels'];
+const files = ['avatarSurface', 'sampleAvatar', 'neuralGeometry', 'morphChannels', 'particleContours'];
 const urls = Object.fromEntries(files.map(name => [name, pathToFileURL(join(temporary, `${name}.mjs`)).href]));
 try {
   for (const name of files) {
     const sourcePath = name === 'neuralGeometry' ? 'src/components/canvas/neuralGeometry.ts' : `src/components/avatar/${name}.ts`;
     let source = await readFile(resolve(sourcePath), 'utf8');
     source = source.replace("'../canvas/neuralGeometry'", `'${urls.neuralGeometry}'`)
+      .replace("'./particleContours'", `'${urls.particleContours}'`)
       .replace("'./morphChannels'", `'${urls.morphChannels}'`)
       .replaceAll("'three'", `'${pathToFileURL(resolve('node_modules/three/build/three.module.js')).href}'`)
       .replace(/'three\/addons\/([^']+)'/g, (_, path) => `'${pathToFileURL(resolve('node_modules/three/examples/jsm', path)).href}'`);

@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { MeshSurfaceSampler } from 'three/addons/math/MeshSurfaceSampler.js';
 import { seededRandom } from '../canvas/neuralGeometry';
 import { MORPH_CHANNELS } from './morphChannels';
+import { particleContours } from './particleContours';
 
 // r174 ships this public method, but its matching @types/three omits the signature.
 declare module 'three/addons/math/MeshSurfaceSampler.js' {
@@ -17,8 +18,10 @@ export interface AvatarSamples {
   dispose: () => void;
 }
 
-export function sampleAvatar(surface: THREE.BufferGeometry, compact: boolean, facialMask = false): AvatarSamples {
-  const count = facialMask ? compact ? 2200 : 3800 : compact ? 4500 : 11000;
+export function sampleAvatar(surface: THREE.BufferGeometry, compact: boolean, facialMask = false, portraitParticles = false): AvatarSamples {
+  const count = portraitParticles ? compact ? 3200 : 6200 : facialMask ? compact ? 2200 : 3800 : compact ? 4500 : 11000;
+  const contours = portraitParticles ? particleContours(surface, compact) : [];
+  const bodyCount = count - contours.length;
   const random = seededRandom(731);
   // The bust needs more samples on its face. A face-only mask needs even coverage
   // instead, or the old upper-body weighting starves the lips, cheeks and jaw.
@@ -26,14 +29,14 @@ export function sampleAvatar(surface: THREE.BufferGeometry, compact: boolean, fa
   const sourcePositions = weighted.getAttribute('position'), sourceNormals = weighted.getAttribute('normal');
   const density = new Float32Array(sourcePositions.count);
   for (let i = 0; i < density.length; i++) {
-    density[i] = facialMask ? 1 : .75 + (sourcePositions.getY(i) > .15 ? 1.1 : 0)
+    density[i] = facialMask || portraitParticles ? 1 : .75 + (sourcePositions.getY(i) > .15 ? 1.1 : 0)
       + (sourcePositions.getY(i) > .15 && sourceNormals.getZ(i) > .25 ? 1.6 : 0);
   }
   weighted.setAttribute('density', new THREE.BufferAttribute(density, 1));
   const material = new THREE.MeshBasicMaterial();
   const sampler = new MeshSurfaceSampler(new THREE.Mesh(weighted, material)).setWeightAttribute('density').setRandomGenerator(random).build();
   const positions = new Float32Array(count * 3), normals = new Float32Array(count * 3);
-  const colors = new Float32Array(count * 3), seeds = new Float32Array(count);
+  const colors = new Float32Array(count * 3), seeds = new Float32Array(count), features = new Float32Array(count);
   const position = new THREE.Vector3(), normal = new THREE.Vector3(), color = new THREE.Color();
   const channels = MORPH_CHANNELS.filter(c => surface.hasAttribute(c.position) && surface.hasAttribute(c.normal)).map(channel => ({
     channel, delta: surface.getAttribute(channel.position), normalDelta: surface.getAttribute(channel.normal),
@@ -44,28 +47,49 @@ export function sampleAvatar(surface: THREE.BufferGeometry, compact: boolean, fa
   const pathVertices: number[] = [], pathWeights: number[] = [];
   const va = new THREE.Vector3(), vb = new THREE.Vector3(), vc = new THREE.Vector3(), bary = new THREE.Vector3();
   const cyan = new THREE.Color('#80e9f3'), blue = new THREE.Color('#417ac6'), violet = new THREE.Color('#9c90d6');
+  const portraitCyan = new THREE.Color('#78cfe0'), portraitBlue = new THREE.Color('#4695b6');
   for (let i = 0; i < count; i++) {
-    if (pointVertices && pointWeights && sampler.distribution) {
+    const contour = i >= bodyCount ? contours[i - bodyCount] : undefined;
+    if (contour) {
+      va.fromBufferAttribute(sourcePositions, contour.a); vb.fromBufferAttribute(sourcePositions, contour.b);
+      position.copy(va).lerp(vb, contour.mix);
+      va.fromBufferAttribute(sourceNormals, contour.a); vb.fromBufferAttribute(sourceNormals, contour.b);
+      normal.copy(va).lerp(vb, contour.mix);
+      bary.set(1 - contour.mix, contour.mix, 0); features[i] = 1;
+      if (pointVertices && pointWeights) {
+        pointVertices.set([contour.a, contour.b, contour.b], i * 3); bary.toArray(pointWeights, i * 3);
+      }
+    } else if (((pointVertices && pointWeights) || portraitParticles) && sampler.distribution) {
       const distribution = sampler.distribution;
-      const faceIndex = sampler.binarySearch(random() * distribution[distribution.length - 1]);
+      // Stratified area quantiles prevent large random clusters between triangles.
+      const quantile = portraitParticles ? (i + random()) / bodyCount : random();
+      const faceIndex = sampler.binarySearch(quantile * distribution[distribution.length - 1]);
       sampler.sampleFace(faceIndex, position, normal);
       const a = weighted.index?.getX(faceIndex * 3) ?? faceIndex * 3;
       const b = weighted.index?.getX(faceIndex * 3 + 1) ?? faceIndex * 3 + 1;
       const c = weighted.index?.getX(faceIndex * 3 + 2) ?? faceIndex * 3 + 2;
       va.fromBufferAttribute(sourcePositions, a); vb.fromBufferAttribute(sourcePositions, b); vc.fromBufferAttribute(sourcePositions, c);
       THREE.Triangle.getBarycoord(position, va, vb, vc, bary);
-      pointVertices.set([a, b, c], i * 3); bary.toArray(pointWeights, i * 3);
+      if (pointVertices && pointWeights) { pointVertices.set([a, b, c], i * 3); bary.toArray(pointWeights, i * 3); }
+    } else sampler.sample(position, normal);
+    if (pointVertices && pointWeights) {
+      const a = pointVertices[i * 3], b = pointVertices[i * 3 + 1], c = pointVertices[i * 3 + 2];
       for (const data of channels) {
         for (let axis = 0; axis < 3; axis++) {
           data.points[i * 3 + axis] = data.delta.array[a * 3 + axis] * bary.x + data.delta.array[b * 3 + axis] * bary.y + data.delta.array[c * 3 + axis] * bary.z;
           data.normals[i * 3 + axis] = data.normalDelta.array[a * 3 + axis] * bary.x + data.normalDelta.array[b * 3 + axis] * bary.y + data.normalDelta.array[c * 3 + axis] * bary.z;
         }
       }
-    } else sampler.sample(position, normal);
+    }
     position.toArray(positions, i * 3); normal.normalize().toArray(normals, i * 3);
     const tone = random();
-    color.copy(blue).lerp(cyan, .38 + random() * .62);
-    if (tone < .08) color.lerp(violet, .7);
+    if (portraitParticles) {
+      color.copy(portraitBlue).lerp(portraitCyan, features[i] ? .45 : .25 + random() * .35);
+      if (tone < .035) color.lerp(violet, .25);
+    } else {
+      color.copy(blue).lerp(cyan, .38 + random() * .62);
+      if (tone < .08) color.lerp(violet, .7);
+    }
     color.toArray(colors, i * 3); seeds[i] = random();
   }
   weighted.dispose(); material.dispose();
@@ -74,11 +98,21 @@ export function sampleAvatar(surface: THREE.BufferGeometry, compact: boolean, fa
   points.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
   points.setAttribute('color', new THREE.BufferAttribute(colors, 3));
   points.setAttribute('aSeed', new THREE.BufferAttribute(seeds, 1));
+  points.setAttribute('aFeature', new THREE.BufferAttribute(features, 1));
   for (const data of channels) {
     points.setAttribute(data.channel.position, new THREE.BufferAttribute(data.points, 3));
     points.setAttribute(data.channel.normal, new THREE.BufferAttribute(data.normals, 3));
   }
   points.computeBoundingSphere();
+  if (portraitParticles) {
+    // Particle-only mode has no visible pathways; avoid building a discarded graph.
+    points.setAttribute('aAnchor', new THREE.BufferAttribute(new Float32Array(count), 1));
+    const pathways = new THREE.BufferGeometry();
+    pathways.setAttribute('position', new THREE.Float32BufferAttribute([], 3));
+    const bindings = pointVertices && pointWeights ? { pointVertices, pointWeights, pathVertices: new Uint32Array(0), pathWeights: new Float32Array(0) } : undefined;
+    return { points, pathways, particleCount: count, connectionCount: 0, bindings,
+      dispose: () => { points.dispose(); pathways.dispose(); } };
+  }
 
   // A spatial hash limits neighbor searches to nearby cells, and only a subset
   // of particles participates. Degree and edge caps prevent a dense wire cage.
@@ -92,7 +126,7 @@ export function sampleAvatar(surface: THREE.BufferGeometry, compact: boolean, fa
     const key = cellKey(coordinate(i, 0), coordinate(i, 1), coordinate(i, 2));
     const bucket = cells.get(key) ?? []; bucket.push(i); cells.set(key, bucket);
   }
-  const edges: number[] = [], progress: number[] = [], phases: number[] = [], degree = new Uint8Array(count);
+  const edges: number[] = [], progress: number[] = [], phases: number[] = [], contourFlags: number[] = [], degree = new Uint8Array(count);
   if (facialMask && surface.index) {
     // Source boundary edges trace the actual eyelids, lip opening and silhouette.
     // These segments follow existing topology and do not fill the openings.
@@ -116,6 +150,7 @@ export function sampleAvatar(surface: THREE.BufferGeometry, compact: boolean, fa
         start.copy(a).lerp(b, s / segments); end.copy(a).lerp(b, (s + 1) / segments);
         edges.push(...start.toArray(), ...end.toArray());
         progress.push(s / segments, (s + 1) / segments); phases.push(phase, phase);
+        contourFlags.push(1, 1);
         if (channels.length) {
           for (const fraction of [s / segments, (s + 1) / segments]) {
             pathVertices.push(edge.a, edge.b, edge.b); pathWeights.push(1 - fraction, fraction, 0);
@@ -146,6 +181,7 @@ export function sampleAvatar(surface: THREE.BufferGeometry, compact: boolean, fa
       if (degree[i] >= maxDegree || edges.length / 6 >= limit) break;
       edges.push(...positions.subarray(i * 3, i * 3 + 3), ...positions.subarray(j * 3, j * 3 + 3));
       progress.push(0, 1); const phase = random(); phases.push(phase, phase);
+      contourFlags.push(0, 0);
       if (pointVertices && pointWeights) for (const endpoint of [i, j]) {
         pathVertices.push(...pointVertices.subarray(endpoint * 3, endpoint * 3 + 3));
         pathWeights.push(...pointWeights.subarray(endpoint * 3, endpoint * 3 + 3));
@@ -158,6 +194,7 @@ export function sampleAvatar(surface: THREE.BufferGeometry, compact: boolean, fa
   pathways.setAttribute('position', new THREE.Float32BufferAttribute(edges, 3));
   pathways.setAttribute('aProgress', new THREE.Float32BufferAttribute(progress, 1));
   pathways.setAttribute('aPhase', new THREE.Float32BufferAttribute(phases, 1));
+  pathways.setAttribute('aContour', new THREE.Float32BufferAttribute(contourFlags, 1));
   for (const data of channels) pathways.setAttribute(data.channel.position, new THREE.Float32BufferAttribute(data.paths, 3));
   pathways.computeBoundingSphere();
   // Connected nodes read as the network; unconnected samples remain faint depth dust.

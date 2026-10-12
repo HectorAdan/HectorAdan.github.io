@@ -10,6 +10,7 @@ import { soundManager } from './utils/soundEffects';
 import { OpeningSequence } from './components/ui/OpeningSequence';
 import { initialEntrancePhase } from './utils/entrance';
 import { isWebGLAvailable } from './utils/webglDetect';
+import type { FaceStyle } from './utils/faceStyle';
 import type { AvatarRenderMode } from './components/canvas/HoloAvatar';
 import { useIntroductionVoice } from './utils/useIntroductionVoice';
 import type { IdentityStatus } from './utils/identityIntroduction';
@@ -37,7 +38,10 @@ export default function App() {
   const [introRun, setIntroRun] = useState(0);
   const [identityStatus, setIdentityStatus] = useState<IdentityStatus>('loading');
   const [isMuted, setIsMuted] = useState<boolean>(true);
-  const [avatarMode, setAvatarMode] = useState<AvatarRenderMode>('hologram');
+  const avatarMode: AvatarRenderMode = 'hologram';
+  const [faceStyle, setFaceStyle] = useState<FaceStyle>('neural');
+  const [faceContoursVisible, setFaceContoursVisible] = useState(true);
+  const handleToggleFaceContours = useCallback(() => setFaceContoursVisible(value => !value), []);
   const [reducedMotion, setReducedMotion] = useState<boolean>(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   const [motionPaused, setMotionPaused] = useState(storedMotionPreference);
   const motionReduced = reducedMotion || motionPaused;
@@ -141,14 +145,9 @@ export default function App() {
     setIsIntroPlaying(false);
   }, [isIntroPlaying, introduction.voice]);
 
-  // Cycle avatar modes (Hologram -> Silhouette -> Matrix)
-  const handleCycleAvatarMode = useCallback(() => {
+  const handleSelectFaceStyle = useCallback((style: FaceStyle) => {
     soundManager.playNeuralClick();
-    setAvatarMode((prev) => {
-      if (prev === 'hologram') return 'silhouette';
-      if (prev === 'silhouette') return 'matrix';
-      return 'hologram';
-    });
+    setFaceStyle(style);
   }, []);
 
   // Audio Toggle
@@ -217,7 +216,7 @@ export default function App() {
         return;
       }
       // Ignore if user is typing inside an input or textarea
-      if (e.key !== 'Escape' && ['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) {
+      if (e.key !== 'Escape' && ['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement)?.tagName)) {
         return;
       }
 
@@ -277,6 +276,8 @@ export default function App() {
           onIntroComplete={handleIntroComplete}
           reducedMotion={motionReduced}
           avatarMode={avatarMode}
+          faceStyle={faceStyle}
+          faceContoursVisible={faceContoursVisible}
           onAvatarClick={handleTriggerIntro}
           entrancePhase={entranceOpen ? entrancePhase : 'done'}
           onReady={handleEnvironmentReady}
@@ -300,9 +301,6 @@ export default function App() {
         onSelectSector={handleSelectSector}
         isMuted={isMuted}
         onToggleMute={handleToggleMute}
-        avatarMode={avatarMode}
-        onCycleAvatarMode={handleCycleAvatarMode}
-        onTriggerIntro={handleTriggerIntro}
         previewSector={previewSector}
         onPreviewSector={handlePreviewSector}
         motionReduced={motionReduced}
@@ -320,6 +318,10 @@ export default function App() {
           introRun={introRun}
           identityStatus={webglSupported ? identityStatus : 'unavailable'}
           onReplayIntro={handleReplayIntro}
+          faceStyle={faceStyle}
+          faceContoursVisible={faceContoursVisible}
+          onSelectFaceStyle={handleSelectFaceStyle}
+          onToggleFaceContours={handleToggleFaceContours}
           voiceStatus={introduction.status}
           onToggleVoice={introduction.toggle}
           isMuted={isMuted}

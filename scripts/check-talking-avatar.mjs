@@ -7,7 +7,7 @@ import ts from 'typescript';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 const dir = await mkdtemp(join(tmpdir(), 'talking-avatar-check-'));
-const names = ['avatarSurface', 'sampleAvatar', 'morphChannels', 'talkingSurface', 'talkingMotion', 'localizedMorphs', 'neuralGeometry'];
+const names = ['avatarSurface', 'sampleAvatar', 'morphChannels', 'talkingSurface', 'talkingMotion', 'localizedMorphs', 'particleContours', 'neuralGeometry'];
 const urls = Object.fromEntries(names.map(name => [name, pathToFileURL(join(dir, `${name}.mjs`)).href]));
 try {
   for (const name of names) {
@@ -20,7 +20,7 @@ try {
   const { prepareTalkingSurface } = await import(urls.talkingSurface);
   const { sampleAvatar } = await import(urls.sampleAvatar);
   const { MORPH_CHANNELS } = await import(urls.morphChannels);
-  const { analyzeSpeech, jawAtTime, blinkSchedule, speechPose, recordedPose, captionAtTime, parseCaptions, INTRO_CAPTIONS } = await import(urls.talkingMotion);
+  const { analyzeSpeech, jawAtTime, blinkSchedule, speechPose, idlePose, recordedPose, captionAtTime, parseCaptions, INTRO_CAPTIONS } = await import(urls.talkingMotion);
   const bytes = await readFile('public/models/hector-mediapipe-poc.glb');
   const gltf = await new GLTFLoader().parseAsync(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), '');
   const original = prepareTalkingSurface(gltf.scene), surface = prepareTalkingSurface(gltf.scene, true);
@@ -38,8 +38,8 @@ try {
     assert.ok(Array.from(delta.array).some(value => Math.abs(value) > .00001), `${channel.name} must be nonzero`);
     assert.ok(Array.from(surface.getAttribute(channel.normal).array).every(Number.isFinite));
   }
-  for (const compact of [false, true]) {
-    const samples = sampleAvatar(surface, compact, true), bindings = samples.bindings;
+  for (const compact of [false, true]) for (const portraitParticles of [false, true]) {
+    const samples = sampleAvatar(surface, compact, !portraitParticles, portraitParticles), bindings = samples.bindings;
     assert.ok(bindings, 'Animated samples require surface bindings');
     const weights = [.8, .35, .6];
     for (const [geometry, vertices, bary] of [[samples.points, bindings.pointVertices, bindings.pointWeights], [samples.pathways, bindings.pathVertices, bindings.pathWeights]]) {
@@ -62,7 +62,26 @@ try {
       }
     }
     samples.dispose();
-    console.log(`${compact ? 'Compact' : 'Desktop'}: barycentric particle and pathway morph bindings valid`);
+    if (!portraitParticles) {
+      const flags = samples.pathways.getAttribute('aContour');
+      assert.equal(flags.count, samples.pathways.getAttribute('position').count);
+      assert.ok(Array.from(flags.array).some(value => value === 1), 'Neural source outlines must be separately tagged');
+      assert.ok(Array.from(flags.array).some(value => value === 0), 'Regular neural pathways must remain available with outlines hidden');
+      for (let i = 0; i < flags.count; i += 2) assert.equal(flags.array[i], flags.array[i + 1], 'Both contour segment endpoints must share visibility');
+    }
+    if (portraitParticles) {
+      assert.equal(samples.particleCount, compact ? 3200 : 6200);
+      assert.equal(samples.connectionCount, 0);
+      const positions = samples.points.getAttribute('position');
+      let lowerFace = 0;
+      for (let i = 0; i < positions.count; i++) if (positions.getY(i) < .15) lowerFace++;
+      assert.ok(lowerFace / positions.count > .30, 'The lower face must not be starved by bust-model density weights');
+      const repeated = sampleAvatar(surface, compact, false, true);
+      assert.deepEqual(repeated.points.getAttribute('position').array, positions.array, 'Portrait samples must stay deterministic');
+      repeated.dispose();
+      assert.ok(Array.from(samples.points.getAttribute('aFeature').array).filter(x => x > .5).length > 30, 'Particle face needs source-bound lip and lid contour samples');
+    }
+    console.log(`${compact ? 'Compact' : 'Desktop'} / ${portraitParticles ? 'Portrait particles' : 'Neural'}: barycentric particle and pathway morph bindings valid`);
   }
   surface.dispose(); gltf.scene.traverse(object => { if (object.isMesh) { object.geometry.dispose(); object.material.dispose(); } });
 
@@ -79,6 +98,24 @@ try {
   const snapshot = JSON.stringify(pose); speechPose(track, .8, events, true, pose); assert.equal(JSON.stringify(pose), snapshot, 'A paused media clock must freeze the pose');
   recordedPose([{ time: 0, weights: { jawOpen: .2 }, head: [0, 0, 0] }, { time: 1, weights: { jawOpen: .8 }, head: [.02, .04, 0] }], .5, pose);
   assert.equal(pose.weights.jawOpen, .5); assert.equal(pose.head[1], .02);
+  let idleBlinks = 0, inBlink = false;
+  for (let t = 0; t < 120; t += .01) {
+    idlePose(t, false, pose);
+    assert.equal(pose.weights.jawOpen, 0, 'Idle presence must never invent speech');
+    assert.ok(pose.weights.eyeBlinkLeft >= 0 && pose.weights.eyeBlinkLeft <= 1);
+    assert.ok(pose.weights.eyeBlinkRight >= 0 && pose.weights.eyeBlinkRight <= 1);
+    assert.ok(pose.head.every(value => Number.isFinite(value) && Math.abs(value) <= .031), 'Idle head movement must stay subtle');
+    const closed = pose.weights.eyeBlinkLeft > .9;
+    if (closed && !inBlink) idleBlinks++;
+    inBlink = closed;
+  }
+  assert.ok(idleBlinks >= 15 && idleBlinks <= 30, 'Long idle sessions must continue blinking naturally');
+  idlePose(36000.12, false, pose);
+  assert.ok(Object.values(pose.weights).every(Number.isFinite));
+  idlePose(8.9, true, pose);
+  assert.deepEqual(pose.head, [0, 0, 0]);
+  assert.ok(Object.values(pose.weights).every(value => value === 0), 'Reduced motion disables the entire idle pose');
+  console.log('Continuous idle blinking, subtle head pose, silent jaw and reduced motion: valid');
   const cues = parseCaptions('WEBVTT\n\n00:00:01.000 --> 00:00:02.000\nHello Hector.\n');
   assert.equal(captionAtTime(cues, 1.5), 'Hello Hector.'); assert.equal(captionAtTime(cues, 2), '');
   assert.throws(() => parseCaptions('not timed captions'), /No valid/);

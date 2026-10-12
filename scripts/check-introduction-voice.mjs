@@ -62,6 +62,10 @@ try {
   const pose = { weights: {}, head: [0, 0, 0] };
   voice.sample(false, pose); assert.ok(pose.weights.jawOpen > .4, 'Jaw follows the exact audio clock');
   voice.pause(); const pausedTime = voice.time; const snapshot = JSON.stringify(pose);
+  let subscribedStatus;
+  const detachSnapshot = voice.subscribe(status => { subscribedStatus = status; });
+  assert.equal(subscribedStatus, 'paused', 'A remounted control must receive the current playback status immediately');
+  detachSnapshot();
   context.currentTime += 5; voice.sample(false, pose);
   assert.equal(voice.time, pausedTime); assert.equal(JSON.stringify(pose), snapshot, 'Pausing freezes facial motion and audio position');
   await voice.resume(); assert.equal(context.sources.at(-1).offset, pausedTime);
