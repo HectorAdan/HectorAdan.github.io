@@ -2,6 +2,10 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import './index.css';
+import { initializeAnalytics } from './utils/analytics';
+
+// Run once outside React effects, including StrictMode's development remounts.
+initializeAnalytics(import.meta.env.PROD);
 
 const AvatarPrototype = React.lazy(() => import('./components/avatar/AvatarPrototype'));
 const TalkingAvatarPreview = React.lazy(() => import('./components/avatar/TalkingAvatarPreview'));

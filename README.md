@@ -131,6 +131,18 @@ GitHub Actions will automatically run `npm run build` and publish the site.
 
 ---
 
+## Portfolio analytics
+
+Visitor statistics live in [Hector's GoatCounter dashboard](https://hectorportfolio.goatcounter.com/). Access is controlled by the GoatCounter account; the portfolio does not embed a dashboard login or API token.
+
+`src/utils/analytics.ts` loads GoatCounter asynchronously only for production builds on `hectoradan.github.io`. Development, localhost/LAN previews, other hostnames, and URLs with an `avatar` query parameter do not load the tracker. No new dependencies or backend are needed. If the production domain changes, update the hostname guard.
+
+One page visit is sent per page load, without the URL query string. Sections and interactions are separate events: `section-about`, `section-projects`, `section-experience`, `section-contact`, `meet-hector`, `case-study-<project-id>`, and `project-website-<project-id>`. Events use only fixed public names/titles; contact messages, audio, photos and avatar reference files are not collected. GoatCounter's session handling determines visit/event deduplication; these are approximate visits, not verified identities or guaranteed counts of every click.
+
+Tracking begins after deployment. Local tests do not populate the live dashboard, and blockers may prevent reporting. Use GoatCounter's **Settings → Tracking → Ignore IPs** or its documented `#toggle-goatcounter` option to exclude your own production visits. Keep dashboard access restricted to logged-in users in GoatCounter's settings if statistics should be private.
+
+Validation: `node scripts/check-analytics.mjs` and `npm run build`.
+
 ## ⌨️ Keyboard Shortcuts
 
 | Key | Action |

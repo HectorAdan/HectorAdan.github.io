@@ -14,6 +14,7 @@ import type { FaceStyle } from './utils/faceStyle';
 import type { AvatarRenderMode } from './components/canvas/HoloAvatar';
 import { useIntroductionVoice } from './utils/useIntroductionVoice';
 import type { IdentityStatus } from './utils/identityIntroduction';
+import { trackAnalyticsEvent } from './utils/analytics';
 
 function storedMotionPreference() {
   try { return localStorage.getItem('portfolio-motion') === 'reduced'; }
@@ -92,6 +93,7 @@ export default function App() {
   // Handle Sector Navigation
   const handleSelectSector = useCallback(
     (sector: SectorId) => {
+      if (sector !== 'home' && sector !== activeSector) trackAnalyticsEvent(`section-${sector}`, `Open ${sector} section`);
       if (sector !== 'home') rememberDialogOpener();
       if (sector === 'home' && (activeSector !== 'home' || isIntroPlaying)) {
         soundManager.playClose();
@@ -115,6 +117,7 @@ export default function App() {
 
   // Trigger "Meet Hector" Intro Sequence
   const handleTriggerIntro = useCallback(() => {
+    trackAnalyticsEvent('meet-hector', 'Meet Hector');
     rememberDialogOpener();
     setPreviewSector(null);
     lastPreviewSector.current = null;

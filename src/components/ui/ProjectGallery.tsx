@@ -5,6 +5,7 @@ import { PROJECT_STORIES, type ProjectStory } from '../../data/projectStories';
 import type { ProjectItem, SectorId } from '../../types/portfolio';
 import { TechnologyTags } from './TechnologyTags';
 import { soundManager } from '../../utils/soundEffects';
+import { trackAnalyticsEvent } from '../../utils/analytics';
 import './ProjectGallery.css';
 
 const filters = [
@@ -29,6 +30,7 @@ interface ProjectGalleryProps {
 function ProjectWebsiteLink({ project }: { project: ProjectItem }) {
   if (!project.liveUrl) return null;
   return <a className="project-read-story project-live-link" href={project.liveUrl} target="_blank" rel="noopener noreferrer"
+    onClick={() => trackAnalyticsEvent(`project-website-${project.id}`, `Visit project website: ${project.title}`)}
     aria-label={`Visit ${project.title} (opens in a new tab)`}>
     Visit website<ArrowUpRight size={15} aria-hidden="true" />
   </a>;
@@ -100,6 +102,8 @@ export function ProjectGallery({ projectFilter, onFilterChange, onSelectSector }
   });
 
   const openStory = (id: string, triggerId?: string) => {
+    const story = stories.find(item => item.project.id === id);
+    if (story && id !== selectedId) trackAnalyticsEvent(`case-study-${id}`, `Read case study: ${story.story.title}`);
     soundManager.playNeuralClick();
     if (!selectedId) returnTarget.current = { id: triggerId ?? '', scrollTop: root.current?.closest('.panel-content')?.scrollTop ?? 0 };
     setSelectedId(id);
