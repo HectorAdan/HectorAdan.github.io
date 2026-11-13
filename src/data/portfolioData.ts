@@ -84,6 +84,17 @@ export const SKILL_CATEGORIES: SkillCategory[] = [
 export const PROJECTS: ProjectItem[] = [
   // --- Personal Projects ---
   {
+    id: 'trekgic',
+    title: 'Trekgic — Star Trek & MTG Story Explorer',
+    company: 'Personal project',
+    category: 'Interactive Catalog & Gaming Companion',
+    year: 'Live',
+    description: 'An independent Star Trek and Magic: The Gathering fan catalog connecting collectible cards with episodes, films, and story guides. Features a filterable card catalog with artwork variants, release-order and story timelines, favorites, and a device-saved card album. Includes a multiplayer life counter with commander damage and player counters, presented through a cinematic sci-fi interface.',
+    tags: ['React', 'TypeScript', 'Vite', 'Zustand', 'Tailwind CSS', 'Three.js / R3F', 'Motion', 'React Router', 'Tesseract.js', 'Electron / Capacitor'],
+    liveUrl: 'https://www.trekgic.com/',
+    featured: true,
+  },
+  {
     id: 'simfinanzas',
     title: 'SimFinanzas — Financial Simulation & Planning',
     company: 'Personal project',
